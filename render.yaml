@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: cot-platform
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter  # o il tuo piano
+    region: frankfurt  # o la tua region
+    branch: main  # o il tuo branch
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: SELENIUM_HEADLESS
+        value: "true"
+      - key: PORT
+        value: "10000"
+      # Aggiungi altre variabili d'ambiente se necessario
+      # - key: OPENAI_API_KEY
+      #   sync: false  # Gestita manualmente nel dashboard
