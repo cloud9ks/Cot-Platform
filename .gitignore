@@ -1,0 +1,50 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Database
+*.db
+*.sqlite3
+cot_data.db
+
+# Environment variables
+.env
+.env.local
+
+# Backup files
+backup_*/
+*.backup
+
+# Logs
+*.log
+logs/
+
+# Selenium
+chromedriver.exe
+geckodriver.exe
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Visual Studio
+.vs/
+*.suo
+*.vsidx
+
+# Backup files
+*.bak

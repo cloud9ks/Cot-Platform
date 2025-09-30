@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COT Analysis Platform - Previsioni Professionali sui Mercati</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* Navigation */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            background: rgba(102, 126, 234, 0.95) !important;
+        }
+        
+        .navbar-brand, .nav-link {
+            color: white !important;
+            font-weight: 600;
+        }
+        
+        .nav-link:hover {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        
+        .navbar-toggler {
+            border-color: rgba(255,255,255,0.3);
+        }
+        
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff10" d="M0,96L48,112C96,128,192,160,288,165.3C384,171,480,149,576,154.7C672,160,768,192,864,197.3C960,203,1056,181,1152,165.3C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            animation: wave 10s linear infinite;
+        }
+        
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease;
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 30px;
+            animation: fadeInUp 1s ease 0.2s both;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .btn-hero {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            animation: fadeInUp 1s ease 0.4s both;
+        }
+        
+        .btn-primary-hero {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-primary-hero:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            color: #667eea;
+        }
+        
+        .btn-secondary-hero {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            margin-left: 20px;
+        }
+        
+        .btn-secondary-hero:hover {
+            background: white;
+            color: #667eea;
+        }
+        
+        /* Live Ticker */
+        .ticker {
+            background: #1e293b;
+            padding: 15px 0;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        .ticker-content {
+            display: flex;
+            animation: scroll 30s linear infinite;
+        }
+        
+        @keyframes scroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            margin-right: 50px;
+            white-space: nowrap;
+            color: white;
+        }
+        
+        .ticker-item .symbol {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .ticker-item .price {
+            margin-right: 10px;
+        }
+        
+        .ticker-item .change-up {
+            color: #10b981;
+        }
+        
+        .ticker-item .change-down {
+            color: #ef4444;
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 100px 0;
+            background: #f8f9fa;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            height: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            color: white;
+        }
+        
+        /* Stats Section */
+        .stats {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: white;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* CTA Section */
+        .cta {
+            padding: 100px 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            text-align: center;
+            color: white;
+        }
+        
+        .cta h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        /* Newsletter Section */
+        .newsletter {
+            padding: 80px 0;
+            background: white;
+            text-align: center;
+        }
+        
+        .newsletter-form {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .newsletter-form .form-control {
+            border-radius: 50px;
+            border: 2px solid #e2e8f0;
+            padding: 15px 25px;
+        }
+        
+        .newsletter-form .btn {
+            border-radius: 50px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            white-space: nowrap;
+        }
+        
+        /* Footer */
+        footer {
+            background: #1e293b;
+            color: white;
+            padding: 50px 0 30px;
+        }
+        
+        .footer-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            margin-right: 20px;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .btn-secondary-hero {
+                margin-left: 0;
+                margin-top: 15px;
+            }
+            
+            .newsletter-form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Live Ticker -->
+    <div class="ticker">
+        <div class="ticker-content">
+            <div class="ticker-item">
+                <span class="symbol">GOLD</span>
+                <span class="price">$2,043.50</span>
+                <span class="change-up">▲ +0.45%</span>
+            </div>
+            <div class="ticker-item">
+                <span class="symbol">USD INDEX</span>
+                <span class="price">103.245</span>
+                <span class="change-down">▼ -0.12%</span>
+            </div>
+            <div class="ticker-item">
+                <span class="symbol">EUR/USD</span>
+                <span class="price">1.0875</span>
+                <span class="change-up">▲ +0.23%</span>
+            </div>
+            <div class="ticker-item">
+                <span class="symbol">GBP/USD</span>
+                <span class="price">1.2634</span>
+                <span class="change-up">▲ +0.15%</span>
+            </div>
+            <div class="ticker-item">
+                <span class="symbol">SILVER</span>
+                <span class="price">$24.32</span>
+                <span class="change-down">▼ -0.08%</span>
+            </div>
+            <div class="ticker-item">
+                <span class="symbol">WTI OIL</span>
+                <span class="price">$78.45</span>
+                <span class="change-up">▲ +1.2%</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top" style="top: 45px;">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line"></i> COT Analysis
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/features.html">Funzionalità</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pricing.html">Abbonamenti</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about.html">Chi Siamo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/contact.html">Contatti</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light px-3 ms-2" href="/dashboard">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-6 hero-content">
+                    <h1>COT Analysis Platform</h1>
+                    <p>Previsioni professionali sui mercati finanziari con AI avanzata e analisi COT in tempo reale. Migliora le tue decisioni di trading con l'intelligenza artificiale.</p>
+                    
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="/pricing.html" class="btn-hero btn-primary-hero">
+                            <i class="fas fa-rocket"></i> Inizia Gratis
+                        </a>
+                        <a href="#features" class="btn-hero btn-secondary-hero">
+                            <i class="fas fa-info-circle"></i> Scopri di Più
+                        </a>
+                    </div>
+                    
+                    <div class="mt-5">
+                        <small class="text-white-50">
+                            <i class="fas fa-shield-alt"></i> Dati certificati CFTC
+                            <span class="mx-3">|</span>
+                            <i class="fas fa-robot"></i> Powered by GPT-4
+                            <span class="mx-3">|</span>
+                            <i class="fas fa-users"></i> 10K+ utenti attivi
+                        </small>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <!-- Trading Chart Animation -->
+                    <div style="position: relative; height: 400px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center; color: white;">
+                            <i class="fas fa-chart-area" style="font-size: 8rem; opacity: 0.3; margin-bottom: 20px;"></i>
+                            <p style="opacity: 0.7;">Dashboard interattiva disponibile dopo la registrazione</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-4 fw-bold">Funzionalità Avanzate</h2>
+                <p class="lead text-muted">Tutto ciò che serve per analizzare i mercati come un professionista</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h4>Grafici Interattivi</h4>
+                        <p>Visualizzazioni avanzate con TradingView e analisi multi-timeframe per decisioni informate</p>
+                        <a href="/features.html#charts" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <h4>Multi-Asset</h4>
+                        <p>Analisi su Forex, Commodities, Indici e correlazioni cross-market per un trading diversificato</p>
+                        <a href="/features.html#assets" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <h4>Alert Personalizzati</h4>
+                        <p>Notifiche istantanee su movimenti significativi e segnali di trading via email e SMS</p>
+                        <a href="/features.html#alerts" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <h4>Backtesting</h4>
+                        <p>Verifica l'accuratezza storica delle previsioni con metriche dettagliate di performance</p>
+                        <a href="/features.html#backtesting" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5">
+                <a href="/features.html" class="btn btn-primary btn-lg px-5">
+                    <i class="fas fa-eye"></i> Vedi Tutte le Funzionalità
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="85">0</div>
+                        <p>% Accuratezza Previsioni</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="15">0</div>
+                        <p>+ Asset Monitorati</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <p>Monitoraggio Continuo</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="10000">0</div>
+                        <p>+ Utenti Attivi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Pricing Preview -->
+    <section class="py-5" style="background: white;">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Scegli il Tuo Piano</h2>
+                <p class="lead text-muted">Soluzioni flessibili per ogni tipo di trader</p>
+            </div>
+            
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-3 col-md-6">
+                    <div class="feature-card text-center" style="border: 2px solid transparent;">
+                        <h5>Starter</h5>
+                        <div class="display-6 fw-bold text-primary mb-3">€0<small class="fs-6">/mese</small></div>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>3 asset monitorati</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Dati COT base</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Grafici interattivi</li>
+                        </ul>
+                        <a href="/pricing.html" class="btn btn-outline-primary">Inizia Gratis</a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="feature-card text-center" style="border: 2px solid #667eea; transform: scale(1.05);">
+                        <div class="badge bg-primary mb-2">PIÙ POPOLARE</div>
+                        <h5>Professional</h5>
+                        <div class="display-6 fw-bold text-primary mb-3">€49<small class="fs-6">/mese</small></div>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Tutti gli asset</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Previsioni AI</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Alert intelligenti</li>
+                        </ul>
+                        <a href="/pricing.html" class="btn btn-primary">Prova 30 Giorni Gratis</a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="feature-card text-center" style="border: 2px solid transparent;">
+                        <h5>Enterprise</h5>
+                        <div class="display-6 fw-bold text-primary mb-3">€199<small class="fs-6">/mese</small></div>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>API dedicata</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Team multipli</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Support 24/7</li>
+                        </ul>
+                        <a href="/contact.html?enterprise=true" class="btn btn-outline-primary">Contattaci</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="/pricing.html" class="btn btn-link">Confronta tutti i piani <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Newsletter Section -->
+    <section class="newsletter">
+        <div class="container">
+            <h2 class="display-6 fw-bold">Resta Aggiornato</h2>
+            <p class="lead text-muted">Ricevi analisi di mercato settimanali e aggiornamenti sulla piattaforma</p>
+            
+            <form class="newsletter-form">
+                <input type="email" class="form-control" placeholder="La tua email" required>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Iscriviti
+                </button>
+            </form>
+            
+            <small class="text-muted mt-3 d-block">
+                <i class="fas fa-shield-alt"></i> I tuoi dati sono al sicuro. Niente spam, solo contenuti di valore.
+            </small>
+        </div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <h2>Inizia Ora la Tua Analisi Professionale</h2>
+            <p class="lead mb-4">Unisciti a oltre 10.000 trader che già utilizzano le nostre analisi</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="/pricing.html" class="btn btn-light btn-lg px-5">
+                    <i class="fas fa-rocket"></i> Prova Gratuita 30 Giorni
+                </a>
+                <a href="/contact.html" class="btn btn-outline-light btn-lg px-5">
+                    <i class="fas fa-comments"></i> Parla con un Esperto
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><i class="fas fa-chart-line"></i> COT Analysis Platform</h5>
+                    <p class="text-muted">La piattaforma professionale per l'analisi dei mercati finanziari con intelligenza artificiale e dati COT certificati.</p>
+                    <div class="social-links mt-3">
+                        <a href="#" class="text-muted me-3"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="text-muted me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-muted me-3"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="text-muted"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6 class="text-white">Prodotto</h6>
+                    <div class="footer-links">
+                        <a href="/features.html">Funzionalità</a><br>
+                        <a href="/pricing.html">Prezzi</a><br>
+                        <a href="/api.html">API</a><br>
+                        <a href="/integrations.html">Integrazioni</a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6 class="text-white">Azienda</h6>
+                    <div class="footer-links">
+                        <a href="/about.html">Chi Siamo</a><br>
+                        <a href="/contact.html">Contatti</a><br>
+                        <a href="/careers.html">Carriere</a><br>
+                        <a href="/press.html">Stampa</a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6 class="text-white">Legale</h6>
+                    <div class="footer-links">
+                        <a href="/privacy.html">Privacy Policy</a><br>
+                        <a href="/terms.html">Termini di Servizio</a><br>
+                        <a href="/disclaimer.html">Disclaimer</a><br>
+                        <a href="/cookies.html">Cookie Policy</a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6 class="text-white">Supporto</h6>
+                    <div class="footer-links">
+                        <a href="/help.html">Centro Aiuto</a><br>
+                        <a href="/tutorials.html">Tutorial</a><br>
+                        <a href="/webinars.html">Webinar</a><br>
+                        <a href="/status.html">Stato Servizi</a>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4 border-secondary">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <small class="text-muted">&copy; 2024 COT Analysis Platform. Tutti i diritti riservati.</small>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt text-success"></i> Dati certificati CFTC |
+                        <i class="fas fa-lock text-success"></i> Sicurezza bancaria |
+                        <i class="fas fa-chart-line text-success"></i> 85% accuratezza
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Smooth scroll per ancore
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Update ticker prices (simulazione real-time)
+        setInterval(() => {
+            document.querySelectorAll('.ticker-item').forEach(item => {
+                const priceEl = item.querySelector('.price');
+                const changeEl = item.querySelector('[class*="change-"]');
+                
+                // Simula variazione prezzo
+                const currentPrice = parseFloat(priceEl.textContent.replace(/[$,]/g, ''));
+                const variation = (Math.random() - 0.5) * 0.02; // ±1%
+                const newPrice = currentPrice * (1 + variation);
+                
+                // Aggiorna prezzo
+                if (priceEl.textContent.includes('
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h4>Intelligenza Artificiale</h4>
+                        <p>Analisi predittive con GPT-4 e Machine Learning per previsioni accurate sui movimenti di mercato</p>
+                        <a href="/features.html#ai" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <h4>Dati Real-Time</h4>
+                        <p>Aggiornamenti automatici COT ogni martedì con analisi istantanea e alert personalizzati</p>
+                        <a href="/features.html#realtime" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                )) {
+                    priceEl.textContent = '
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h4>Intelligenza Artificiale</h4>
+                        <p>Analisi predittive con GPT-4 e Machine Learning per previsioni accurate sui movimenti di mercato</p>
+                        <a href="/features.html#ai" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <h4>Dati Real-Time</h4>
+                        <p>Aggiornamenti automatici COT ogni martedì con analisi istantanea e alert personalizzati</p>
+                        <a href="/features.html#realtime" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                 + newPrice.toFixed(2);
+                } else {
+                    priceEl.textContent = newPrice.toFixed(3);
+                }
+                
+                // Aggiorna direzione
+                if (variation > 0) {
+                    changeEl.className = 'change-up';
+                    changeEl.textContent = '▲ +' + (variation * 100).toFixed(2) + '%';
+                } else {
+                    changeEl.className = 'change-down';
+                    changeEl.textContent = '▼ ' + (variation * 100).toFixed(2) + '%';
+                }
+            });
+        }, 5000);
+        
+        // Animated counters
+        function animateCounter(element, target, duration = 2000) {
+            let start = 0;
+            const increment = target / (duration / 16);
+            
+            function updateCounter() {
+                start += increment;
+                if (start < target) {
+                    element.textContent = Math.floor(start);
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    element.textContent = target;
+                }
+            }
+            
+            updateCounter();
+        }
+        
+        // Intersection Observer per animazioni
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (entry.target.classList.contains('stat-number') && entry.target.dataset.target) {
+                        const target = parseInt(entry.target.dataset.target);
+                        animateCounter(entry.target, target);
+                        entry.target.dataset.animated = 'true';
+                    } else {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        // Applica observer agli elementi
+        document.querySelectorAll('.feature-card, .stat-number').forEach(el => {
+            if (!el.classList.contains('stat-number')) {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'all 0.6s ease';
+            }
+            observer.observe(el);
+        });
+        
+        // Newsletter form
+        document.querySelector('.newsletter-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = this.querySelector('input[type="email"]').value;
+            const btn = this.querySelector('button');
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrazione...';
+            btn.disabled = true;
+            
+            // Simula invio
+            setTimeout(() => {
+                alert('Grazie! Ti sei iscritto alla newsletter con successo.');
+                this.reset();
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Iscriviti';
+                btn.disabled = false;
+            }, 2000);
+        });
+        
+        // Parallax effect per hero (leggero)
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const hero = document.querySelector('.hero');
+            const rate = scrolled * -0.5;
+            
+            if (hero && scrolled < hero.offsetHeight) {
+                hero.style.transform = `translateY(${rate}px)`;
+            }
+        });
+        
+        // Feature cards hover effect enhancement
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-15px)';
+                this.style.boxShadow = '0 20px 40px rgba(0,0,0,0.15)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+            });
+        });
+        
+        // Auto-hide ticker on mobile scroll down
+        let lastScrollTop = 0;
+        window.addEventListener('scroll', () => {
+            if (window.innerWidth <= 768) {
+                const st = window.pageYOffset || document.documentElement.scrollTop;
+                const ticker = document.querySelector('.ticker');
+                
+                if (st > lastScrollTop && st > 100) {
+                    ticker.style.transform = 'translateY(-100%)';
+                } else {
+                    ticker.style.transform = 'translateY(0)';
+                }
+                lastScrollTop = st <= 0 ? 0 : st;
+            }
+        });
+    </script>
+</body>
+</html>
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h4>Intelligenza Artificiale</h4>
+                        <p>Analisi predittive con GPT-4 e Machine Learning per previsioni accurate sui movimenti di mercato</p>
+                        <a href="/features.html#ai" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <h4>Dati Real-Time</h4>
+                        <p>Aggiornamenti automatici COT ogni martedì con analisi istantanea e alert personalizzati</p>
+                        <a href="/features.html#realtime" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funzionalità - COT Analysis Platform</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --dark-bg: #1e293b;
+            --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: var(--primary-gradient) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand, .nav-link {
+            color: white !important;
+            font-weight: 600;
+        }
+        
+        .nav-link:hover {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        
+        .hero-features {
+            background: var(--primary-gradient);
+            padding: 120px 0 80px;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-features::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff10" d="M0,96L48,112C96,128,192,160,288,165.3C384,171,480,149,576,154.7C672,160,768,192,864,197.3C960,203,1056,181,1152,165.3C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            animation: wave 20s linear infinite;
+        }
+        
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .hero-features h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-features p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .main-features {
+            padding: 100px 0;
+            background: white;
+        }
+        
+        .feature-showcase {
+            margin-bottom: 100px;
+        }
+        
+        .feature-showcase.reverse .row {
+            flex-direction: row-reverse;
+        }
+        
+        .feature-image {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 20px;
+            padding: 40px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-image::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: var(--primary-gradient);
+            opacity: 0.1;
+            transform: rotate(45deg);
+        }
+        
+        .feature-icon-large {
+            font-size: 6rem;
+            color: #667eea;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .feature-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .feature-badge {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            width: fit-content;
+            margin-bottom: 20px;
+        }
+        
+        .tech-stack {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+        
+        .tech-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px 25px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s;
+            height: 100%;
+        }
+        
+        .tech-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .tech-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            margin: 0 auto 15px;
+        }
+        
+        .advanced-features {
+            padding: 100px 0;
+            background: white;
+        }
+        
+        .advanced-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .advanced-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 30px;
+            transition: all 0.3s;
+        }
+        
+        .advanced-card:hover {
+            border-color: #667eea;
+            box-shadow: var(--card-shadow);
+            transform: translateY(-5px);
+        }
+        
+        .advanced-card .fa {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .integration-section {
+            padding: 80px 0;
+            background: var(--dark-bg);
+            color: white;
+        }
+        
+        .integration-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .integration-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .integration-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .demo-section {
+            padding: 100px 0;
+            background: #f8f9fa;
+        }
+        
+        .demo-video {
+            background: var(--dark-bg);
+            border-radius: 20px;
+            padding: 60px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .demo-video::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--primary-gradient);
+            opacity: 0.1;
+        }
+        
+        .play-button {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-size: 2rem;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .play-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 30px rgba(255,255,255,0.3);
+        }
+        
+        .cta-section {
+            padding: 80px 0;
+            background: var(--primary-gradient);
+            color: white;
+            text-align: center;
+        }
+        
+        .comparison-toggle {
+            background: white;
+            border-radius: 50px;
+            padding: 5px;
+            display: inline-flex;
+            margin-bottom: 40px;
+        }
+        
+        .toggle-btn {
+            padding: 10px 30px;
+            border: none;
+            background: transparent;
+            border-radius: 50px;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .toggle-btn.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-features h1 {
+                font-size: 2.5rem;
+            }
+            
+            .feature-showcase.reverse .row {
+                flex-direction: column;
+            }
+            
+            .feature-image {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line"></i> COT Analysis
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/features">Funzionalità</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pricing">Abbonamenti</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">Chi Siamo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/contact">Contatti</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-features">
+        <div class="container">
+            <h1>Funzionalità Avanzate</h1>
+            <p>Scopri tutti gli strumenti e le tecnologie che rendono COT Analysis la piattaforma più potente per l'analisi dei mercati finanziari</p>
+        </div>
+    </section>
+
+    <!-- Main Features -->
+    <section class="main-features">
+        <div class="container">
+            <!-- Feature 1: AI Predictions -->
+            <div class="feature-showcase">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-6">
+                        <div class="feature-content">
+                            <div class="feature-badge">
+                                <i class="fas fa-brain"></i> INTELLIGENZA ARTIFICIALE
+                            </div>
+                            <h2 class="display-6 fw-bold mb-3">Previsioni AI con GPT-4</h2>
+                            <p class="lead mb-4">Il nostro sistema utilizza GPT-4 e algoritmi di machine learning proprietari per analizzare i dati COT e generare previsioni accurate sui movimenti di mercato.</p>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Analisi sentiment in tempo reale</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Pattern recognition avanzato</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Correlazioni multi-asset</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Backtesting automatico</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="feature-image">
+                            <i class="fas fa-robot feature-icon-large"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 2: Real-time Data -->
+            <div class="feature-showcase reverse">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-6">
+                        <div class="feature-content">
+                            <div class="feature-badge">
+                                <i class="fas fa-sync-alt"></i> DATI IN TEMPO REALE
+                            </div>
+                            <h2 class="display-6 fw-bold mb-3">Aggiornamenti Automatici</h2>
+                            <p class="lead mb-4">Ricevi i dati COT più aggiornati direttamente dalla CFTC ogni martedì, con elaborazione automatica e notifiche immediate sui cambiamenti significativi.</p>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Dati certificati CFTC</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Processamento automatico</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Alert personalizzabili</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Cronologia completa</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="feature-image">
+                            <i class="fas fa-database feature-icon-large"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 3: Interactive Charts -->
+            <div class="feature-showcase">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-6">
+                        <div class="feature-content">
+                            <div class="feature-badge">
+                                <i class="fas fa-chart-bar"></i> VISUALIZZAZIONE
+                            </div>
+                            <h2 class="display-6 fw-bold mb-3">Grafici Interattivi Avanzati</h2>
+                            <p class="lead mb-4">Esplora i dati con grafici interattivi professionali, overlay di indicatori tecnici e strumenti di analisi integrati per una comprensione completa dei mercati.</p>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Grafici multi-timeframe</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> 50+ indicatori tecnici</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Overlay personalizzabili</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Export ad alta risoluzione</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="feature-image">
+                            <i class="fas fa-chart-line feature-icon-large"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="tech-stack">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Tecnologie all'Avanguardia</h2>
+                <p class="lead text-muted">Gli strumenti e le tecnologie che alimentano la nostra piattaforma</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="tech-card">
+                        <div class="tech-icon">
+                            <i class="fab fa-python"></i>
+                        </div>
+                        <h5>Python & ML</h5>
+                        <p class="text-muted small">Algoritmi di machine learning avanzati per l'analisi predittiva</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="tech-card">
+                        <div class="tech-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h5>GPT-4 API</h5>
+                        <p class="text-muted small">Intelligenza artificiale conversazionale per analisi semantiche</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="tech-card">
+                        <div class="tech-icon">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <h5>Cloud Computing</h5>
+                        <p class="text-muted small">Infrastruttura scalabile e affidabile 24/7</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="tech-card">
+                        <div class="tech-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h5>Security</h5>
+                        <p class="text-muted small">Crittografia bancaria e protezione dati avanzata</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Advanced Features Grid -->
+    <section class="advanced-features">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Funzionalità Avanzate</h2>
+                <p class="lead text-muted">Tutto quello che serve per un'analisi professionale</p>
+            </div>
+            
+            <div class="advanced-grid">
+                <div class="advanced-card">
+                    <i class="fas fa-bell"></i>
+                    <h5 class="mt-3">Alert Intelligenti</h5>
+                    <p>Ricevi notifiche personalizzate sui movimenti significativi dei mercati e sui cambiamenti nei sentiment dei trader professionali.</p>
+                </div>
+                
+                <div class="advanced-card">
+                    <i class="fas fa-history"></i>
+                    <h5 class="mt-3">Backtesting Avanzato</h5>
+                    <p>Verifica l'accuratezza delle strategie su dati storici con metriche dettagliate di performance e risk management.</p>
+                </div>
+                
+                <div class="advanced-card">
+                    <i class="fas fa-download"></i>
+                    <h5 class="mt-3">Export Dati</h5>
+                    <p>Esporta tutti i dati in formato CSV, PDF o Excel per analisi personalizzate o integrazione con altri strumenti.</p>
+                </div>
+                
+                <div class="advanced-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h5 class="mt-3">App Mobile</h5>
+                    <p>Accesso completo da dispositivi mobili con sincronizzazione cloud e notifiche push in tempo reale.</p>
+                </div>
+                
+                <div class="advanced-card">
+                    <i class="fas fa-users"></i>
+                    <h5 class="mt-3">Team Collaboration</h5>
+                    <p>Condividi analisi e strategie con il tuo team, con funzioni di commento e workspace condivisi.</p>
+                </div>
+                
+                <div class="advanced-card">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h5 class="mt-3">Educational Content</h5>
+                    <p>Accesso a tutorials, webinar e guide per migliorare le tue competenze nell'analisi COT.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Integration Section -->
+    <section class="integration-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Integrazioni</h2>
+                <p class="lead">Connetti COT Analysis con i tuoi strumenti preferiti</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="integration-card">
+                        <div class="integration-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h5>API RESTful</h5>
+                        <p>Integrazione completa con documentazione dettagliata e SDK per sviluppatori.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="integration-card">
+                        <div class="integration-icon">
+                            <i class="fas fa-chart-area"></i>
+                        </div>
+                        <h5>TradingView</h5>
+                        <p>Widget e indicatori personalizzati direttamente nella tua piattaforma di trading preferita.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="integration-card">
+                        <div class="integration-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h5>Email & SMS</h5>
+                        <p>Alert via email, SMS e notifiche push per non perdere mai un'opportunità di mercato.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="integration-card">
+                        <div class="integration-icon">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <h5>Excel & Google Sheets</h5>
+                        <p>Add-in per Excel e Google Sheets per importare dati direttamente nei tuoi fogli di calcolo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Vedi COT Analysis in Azione</h2>
+                <p class="lead text-muted">Una demo interattiva delle nostre funzionalità principali</p>
+            </div>
+            
+            <div class="demo-video">
+                <div class="play-button" onclick="openDemo()">
+                    <i class="fas fa-play"></i>
+                </div>
+                <h4 class="mb-3">Demo Interattiva - 5 minuti</h4>
+                <p class="mb-0">Scopri come utilizzare al meglio la piattaforma COT Analysis per migliorare le tue decisioni di trading</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container text-center">
+            <h2 class="display-5 fw-bold mb-4">Pronto a Provare Tutte le Funzionalità?</h2>
+            <p class="lead mb-4">Inizia con il piano Professional e scopri come l'AI può migliorare il tuo trading</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="/register?plan=professional" class="btn btn-light btn-lg px-5">
+                    <i class="fas fa-rocket"></i> Prova Gratuita 30 Giorni
+                </a>
+                <a href="/contact" class="btn btn-outline-light btn-lg px-5">
+                    <i class="fas fa-calendar"></i> Prenota Demo Personalizzata
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><i class="fas fa-chart-line"></i> COT Analysis</h5>
+                    <p class="text-muted">La piattaforma professionale per l'analisi dei mercati finanziari con intelligenza artificiale.</p>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Prodotto</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/features" class="text-muted">Funzionalità</a></li>
+                        <li><a href="/pricing" class="text-muted">Prezzi</a></li>
+                        <li><a href="/api" class="text-muted">API</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Azienda</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/about" class="text-muted">Chi Siamo</a></li>
+                        <li><a href="/contact" class="text-muted">Contatti</a></li>
+                        <li><a href="/careers" class="text-muted">Lavora con noi</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Legale</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/privacy" class="text-muted">Privacy</a></li>
+                        <li><a href="/terms" class="text-muted">Termini</a></li>
+                        <li><a href="/disclaimer" class="text-muted">Disclaimer</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Support</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/help" class="text-muted">Centro Aiuto</a></li>
+                        <li><a href="/tutorials" class="text-muted">Tutorial</a></li>
+                        <li><a href="/status" class="text-muted">Stato Servizi</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center text-muted">
+                <small>&copy; 2024 COT Analysis Platform. Tutti i diritti riservati.</small>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Demo function
+        function openDemo() {
+            // Qui puoi implementare l'apertura di un modal con demo o redirect
+            alert('Demo interattiva in sviluppo! Contattaci per una demo personalizzata.');
+            // window.open('/demo', '_blank'); // Alternativa
+        }
+
+        // Intersection Observer per animazioni
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                    
+                    // Animazione speciale per le card
+                    if (entry.target.classList.contains('tech-card') || 
+                        entry.target.classList.contains('advanced-card')) {
+                        entry.target.style.animationDelay = '0.1s';
+                        entry.target.classList.add('animate-in');
+                    }
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Applica animazioni agli elementi
+        document.querySelectorAll('.feature-showcase, .tech-card, .advanced-card, .integration-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'all 0.6s ease';
+            observer.observe(el);
+        });
+
+        // Parallax effect per hero
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.3;
+            const hero = document.querySelector('.hero-features');
+            if (hero) {
+                hero.style.transform = `translateY(${rate}px)`;
+            }
+        });
+
+        // Counter animation per statistiche (se presenti)
+        function animateCounter(element, target) {
+            let count = 0;
+            const increment = target / 100;
+            const timer = setInterval(() => {
+                count += increment;
+                element.textContent = Math.floor(count);
+                if (count >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                }
+            }, 20);
+        }
+
+        // Highlight features al click
+        document.querySelectorAll('.advanced-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Rimuovi highlight da altre card
+                document.querySelectorAll('.advanced-card').forEach(c => c.classList.remove('highlighted'));
+                // Aggiungi highlight alla card cliccata
+                this.classList.add('highlighted');
+            });
+        });
+
+        // CSS per highlight
+        const style = document.createElement('style');
+        style.textContent = `
+            .advanced-card.highlighted {
+                border-color: #667eea !important;
+                box-shadow: 0 10px 40px rgba(102, 126, 234, 0.2) !important;
+                transform: translateY(-10px) !important;
+            }
+            
+            .animate-in {
+                animation: slideInUp 0.6s ease forwards;
+            }
+            
+            @keyframes slideInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
+                

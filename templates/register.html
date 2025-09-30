@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrati - COT Analysis Platform</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --dark-bg: #1e293b;
+            --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+        
+        .register-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 40px 0;
+        }
+        
+        .register-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .register-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .register-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        
+        .register-body {
+            padding: 40px;
+        }
+        
+        .plan-selector {
+            margin-bottom: 40px;
+        }
+        
+        .plan-option {
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .plan-option:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
+        }
+        
+        .plan-option.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.15);
+        }
+        
+        .plan-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .plan-badge {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        
+        .plan-price {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0 0;
+        }
+        
+        .plan-features li {
+            padding: 4px 0;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+        
+        .plan-features .fa-check {
+            color: #10b981;
+            margin-right: 8px;
+        }
+        
+        .plan-features .fa-times {
+            color: #ef4444;
+            margin-right: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-bg);
+            margin-bottom: 8px;
+        }
+        
+        .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 16px;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn-register {
+            background: var(--primary-gradient);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            color: white;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-register:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+        }
+        
+        .security-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .security-info .fa {
+            color: #10b981;
+            font-size: 1.2rem;
+            margin-right: 8px;
+        }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .trial-info {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .trial-info .fa {
+            color: #10b981;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .register-header {
+                padding: 30px 20px;
+            }
+            
+            .register-header h2 {
+                font-size: 2rem;
+            }
+            
+            .register-body {
+                padding: 30px 20px;
+            }
+            
+            .plan-option {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="container">
+            <div class="register-card">
+                <!-- Header -->
+                <div class="register-header">
+                    <h2><i class="fas fa-chart-line"></i> COT Analysis</h2>
+                    <p class="mb-0">Inizia il tuo viaggio nell'analisi professionale dei mercati</p>
+                </div>
+                
+                <!-- Body -->
+                <div class="register-body">
+                    <form id="registerForm">
+                        <!-- Plan Selection -->
+                        <div class="plan-selector">
+                            <h5 class="mb-4">Scegli il tuo piano</h5>
+                            
+                            <div class="row g-3">
+                                <!-- Starter Plan -->
+                                <div class="col-md-4">
+                                    <div class="plan-option" data-plan="starter">
+                                        <div class="plan-name">
+                                            <h6>Starter</h6>
+                                            <div class="plan-price">Gratis</div>
+                                        </div>
+                                        <ul class="plan-features">
+                                            <li><i class="fas fa-check"></i> 3 asset monitorati</li>
+                                            <li><i class="fas fa-check"></i> Dati COT base</li>
+                                            <li><i class="fas fa-check"></i> Grafici interattivi</li>
+                                            <li><i class="fas fa-times"></i> Previsioni AI</li>
+                                            <li><i class="fas fa-times"></i> Alert personalizzati</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <!-- Professional Plan -->
+                                <div class="col-md-4">
+                                    <div class="plan-option selected" data-plan="professional">
+                                        <div class="plan-badge">PIÙ POPOLARE</div>
+                                        <div class="plan-name">
+                                            <h6>Professional</h6>
+                                            <div class="plan-price">€49<small>/mese</small></div>
+                                        </div>
+                                        <ul class="plan-features">
+                                            <li><i class="fas fa-check"></i> Tutti gli asset</li>
+                                            <li><i class="fas fa-check"></i> Previsioni AI GPT-4</li>
+                                            <li><i class="fas fa-check"></i> Alert intelligenti</li>
+                                            <li><i class="fas fa-check"></i> Analisi avanzata</li>
+                                            <li><i class="fas fa-check"></i> Backtesting</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <!-- Enterprise Plan -->
+                                <div class="col-md-4">
+                                    <div class="plan-option" data-plan="enterprise">
+                                        <div class="plan-name">
+                                            <h6>Enterprise</h6>
+                                            <div class="plan-price">€199<small>/mese</small></div>
+                                        </div>
+                                        <ul class="plan-features">
+                                            <li><i class="fas fa-check"></i> Tutte le funzioni Pro</li>
+                                            <li><i class="fas fa-check"></i> API dedicata</li>
+                                            <li><i class="fas fa-check"></i> Team multipli</li>
+                                            <li><i class="fas fa-check"></i> Support 24/7</li>
+                                            <li><i class="fas fa-check"></i> White label</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="trialInfo" class="trial-info">
+                                <i class="fas fa-gift"></i>
+                                <strong>30 giorni di prova gratuita</strong> per il piano Professional - nessun pagamento richiesto ora!
+                            </div>
+                        </div>
+                        
+                        <!-- User Information -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Nome *</label>
+                                    <input type="text" class="form-control" id="firstName" name="firstName" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Cognome *</label>
+                                    <input type="text" class="form-control" id="lastName" name="lastName" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Password *</label>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                            <div class="form-text">Minimo 8 caratteri</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Conferma Password *</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                        </div>
+                        
+                        <!-- Terms and Privacy -->
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                Accetto i <a href="/terms.html" target="_blank">Termini di Servizio</a> e la <a href="/privacy.html" target="_blank">Privacy Policy</a> *
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="marketing">
+                            <label class="form-check-label" for="marketing">
+                                Desidero ricevere aggiornamenti e newsletter sui mercati finanziari
+                            </label>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-register">
+                            <i class="fas fa-user-plus"></i> <span id="btnText">Crea Account Gratuito</span>
+                        </button>
+                        
+                        <!-- Alert -->
+                        <div id="alertContainer"></div>
+                        
+                        <!-- Security Info -->
+                        <div class="security-info">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <small>Dati crittografati</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <i class="fas fa-lock"></i>
+                                    <small>Sicurezza bancaria</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <i class="fas fa-credit-card"></i>
+                                    <small>Pagamenti sicuri</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Login Link -->
+                        <div class="login-link">
+                            <p class="text-muted">Hai già un account? <a href="/login.html">Accedi qui</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let selectedPlan = 'professional'; // Piano di default
+        
+        // Gestione selezione piano
+        document.querySelectorAll('.plan-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Rimuovi selezione da tutti
+                document.querySelectorAll('.plan-option').forEach(opt => opt.classList.remove('selected'));
+                // Aggiungi selezione al piano cliccato
+                this.classList.add('selected');
+                selectedPlan = this.dataset.plan;
+                
+                // Aggiorna UI in base al piano
+                updateUIForPlan(selectedPlan);
+            });
+        });
+        
+        function updateUIForPlan(plan) {
+            const btnText = document.getElementById('btnText');
+            const trialInfo = document.getElementById('trialInfo');
+            
+            switch(plan) {
+                case 'starter':
+                    btnText.textContent = 'Crea Account Gratuito';
+                    trialInfo.style.display = 'none';
+                    break;
+                case 'professional':
+                    btnText.textContent = 'Inizia Prova Gratuita';
+                    trialInfo.style.display = 'block';
+                    break;
+                case 'enterprise':
+                    btnText.textContent = 'Richiedi Consulenza';
+                    trialInfo.style.display = 'none';
+                    break;
+            }
+        }
+        
+        // Validazione password
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            
+            if (password !== confirmPassword) {
+                this.setCustomValidity('Le password non coincidono');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+        
+        // Gestione form di registrazione
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                plan: selectedPlan,
+                marketing: document.getElementById('marketing').checked
+            };
+            
+            // Validazioni
+            if (!validateForm(data)) {
+                return;
+            }
+            
+            const submitBtn = document.querySelector('.btn-register');
+            const originalText = submitBtn.innerHTML;
+            
+            try {
+                // Disabilita pulsante e mostra loading
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creazione account...';
+                
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Account creato con successo! Reindirizzamento in corso...', 'success');
+                    
+                    // Reindirizza dopo 2 secondi
+                    setTimeout(() => {
+                        if (selectedPlan === 'starter') {
+                            window.location.href = '/dashboard';
+                        } else if (selectedPlan === 'enterprise') {
+                            window.location.href = '/contact.html?enterprise=true';
+                        } else {
+                            window.location.href = '/dashboard'; // Professional con trial
+                        }
+                    }, 2000);
+                } else {
+                    showAlert(result.error || 'Errore nella registrazione', 'error');
+                }
+                
+            } catch (error) {
+                showAlert('Errore di connessione. Riprova più tardi.', 'error');
+                console.error('Registration error:', error);
+            } finally {
+                // Ripristina pulsante
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+        
+        function validateForm(data) {
+            // Validazione email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(data.email)) {
+                showAlert('Inserisci un indirizzo email valido', 'error');
+                return false;
+            }
+            
+            // Validazione password
+            if (data.password.length < 8) {
+                showAlert('La password deve contenere almeno 8 caratteri', 'error');
+                return false;
+            }
+            
+            // Controllo password match
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            if (data.password !== confirmPassword) {
+                showAlert('Le password non coincidono', 'error');
+                return false;
+            }
+            
+            // Controllo termini accettati
+            if (!document.getElementById('terms').checked) {
+                showAlert('Devi accettare i Termini di Servizio e la Privacy Policy', 'error');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass} mt-3" role="alert">
+                    <i class="fas ${icon} me-2"></i>${message}
+                </div>
+            `;
+            
+            // Auto-hide dopo 5 secondi
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Auto-selezione piano da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const planFromUrl = urlParams.get('plan');
+        
+        if (planFromUrl && ['starter', 'professional', 'enterprise'].includes(planFromUrl)) {
+            document.querySelectorAll('.plan-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelector(`[data-plan="${planFromUrl}"]`).classList.add('selected');
+            selectedPlan = planFromUrl;
+            updateUIForPlan(selectedPlan);
+        }
+        
+        // Validazione in tempo reale
+        document.getElementById('email').addEventListener('blur', function() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (this.value && !emailRegex.test(this.value)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+        
+        document.getElementById('password').addEventListener('input', function() {
+            const strength = checkPasswordStrength(this.value);
+            const confirmInput = document.getElementById('confirmPassword');
+            
+            // Aggiorna classe per forza password
+            this.className = this.className.replace(/password-\w+/g, '');
+            if (this.value) {
+                this.classList.add(`password-${strength.level}`);
+            }
+            
+            // Re-valida conferma password se presente
+            if (confirmInput.value) {
+                confirmInput.dispatchEvent(new Event('input'));
+            }
+        });
+        
+        function checkPasswordStrength(password) {
+            let score = 0;
+            let level = 'weak';
+            
+            if (password.length >= 8) score++;
+            if (password.match(/[a-z]/)) score++;
+            if (password.match(/[A-Z]/)) score++;
+            if (password.match(/[0-9]/)) score++;
+            if (password.match(/[^a-zA-Z0-9]/)) score++;
+            
+            if (score >= 4) level = 'strong';
+            else if (score >= 3) level = 'medium';
+            
+            return { score, level };
+        }
+        
+        // Animazione di ingresso
+        document.addEventListener('DOMContentLoaded', function() {
+            const card = document.querySelector('.register-card');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = 'all 0.6s ease';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+        });
+        
+        // Simulazione controllo email esistente (debounced)
+        let emailCheckTimeout;
+        document.getElementById('email').addEventListener('input', function() {
+            clearTimeout(emailCheckTimeout);
+            const email = this.value;
+            
+            if (email && email.includes('@')) {
+                emailCheckTimeout = setTimeout(async () => {
+                    // Qui faresti una chiamata API per verificare se l'email esiste
+                    // Simulazione per ora
+                    if (email === 'test@example.com') {
+                        showAlert('Questa email è già registrata. <a href="/login.html">Accedi qui</a>', 'error');
+                    }
+                }, 1000);
+            }
+        });
+        
+        // Gestione focus per migliorare UX
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.classList.remove('focused');
+            });
+        });
+        
+        // Analisi form completion per ottimizzazione
+        const formFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
+        let completionTracking = {};
+        
+        formFields.forEach(fieldName => {
+            const field = document.getElementById(fieldName);
+            if (field) {
+                field.addEventListener('blur', function() {
+                    if (this.value.trim()) {
+                        completionTracking[fieldName] = Date.now();
+                    }
+                });
+            }
+        });
+        
+        // Track form abandonment
+        let formStarted = false;
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                if (!formStarted) {
+                    formStarted = true;
+                    console.log('Form started at:', new Date());
+                }
+            }, { once: true });
+        });
+        
+        window.addEventListener('beforeunload', function() {
+            if (formStarted) {
+                const completedFields = Object.keys(completionTracking).length;
+                console.log('Form abandoned - completed fields:', completedFields);
+                // Qui potresti inviare analytics
+            }
+        });
+    </script>
+    
+    <style>
+        /* Stili per validazione password */
+        .form-control.password-weak {
+            border-color: #ef4444;
+        }
+        
+        .form-control.password-medium {
+            border-color: #f59e0b;
+        }
+        
+        .form-control.password-strong {
+            border-color: #10b981;
+        }
+        
+        .form-control.is-valid {
+            border-color: #10b981;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310b981' d='m2.3 6.73.5.55 3.4-3.85-.9-.9-2.5 2.8L1.5 4.1l-.9.9 1.7 1.73z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .form-control.is-invalid {
+            border-color: #ef4444;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 4.6.4.4.4-.4 1.4 1.4-.4.4.4.4-1.4 1.4-.4-.4-.4.4-1.4-1.4.4-.4-.4-.4 1.4-1.4Z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .form-group.focused .form-label {
+            color: #667eea;
+        }
+        
+        .form-group.focused .form-control {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Animazioni */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .plan-option {
+            animation: slideInUp 0.6s ease forwards;
+        }
+        
+        .plan-option:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+        
+        .plan-option:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+    </style>
+</body>
+</html>

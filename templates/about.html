@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Siamo - COT Analysis Platform</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --dark-bg: #1e293b;
+            --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: var(--primary-gradient) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand, .nav-link {
+            color: white !important;
+            font-weight: 600;
+        }
+        
+        .nav-link:hover {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        
+        .hero-about {
+            background: var(--primary-gradient);
+            padding: 120px 0 80px;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-about::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff10" d="M0,96L48,112C96,128,192,160,288,165.3C384,171,480,149,576,154.7C672,160,768,192,864,197.3C960,203,1056,181,1152,165.3C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            animation: wave 15s linear infinite;
+        }
+        
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .hero-about h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-about p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .story-section {
+            padding: 100px 0;
+            background: white;
+        }
+        
+        .story-card {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+            height: 100%;
+        }
+        
+        .story-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--primary-gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .team-section {
+            padding: 100px 0;
+            background: #f8f9fa;
+        }
+        
+        .team-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s;
+            height: 100%;
+        }
+        
+        .team-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .team-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            margin: 0 auto 20px;
+        }
+        
+        .team-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-bg);
+            margin-bottom: 5px;
+        }
+        
+        .team-role {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .team-bio {
+            color: #6b7280;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .values-section {
+            padding: 100px 0;
+            background: white;
+        }
+        
+        .value-item {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .value-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin: 0 auto 20px;
+        }
+        
+        .stats-section {
+            padding: 80px 0;
+            background: var(--dark-bg);
+            color: white;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 1.1rem;
+            color: #94a3b8;
+        }
+        
+        .mission-section {
+            padding: 100px 0;
+            background: #f8f9fa;
+        }
+        
+        .mission-card {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mission-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--primary-gradient);
+        }
+        
+        .cta-section {
+            padding: 80px 0;
+            background: var(--primary-gradient);
+            color: white;
+            text-align: center;
+        }
+        
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary-gradient);
+            transform: translateX(-50%);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin: 40px 0;
+        }
+        
+        .timeline-item:nth-child(even) .timeline-content {
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .timeline-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: var(--card-shadow);
+            width: 45%;
+            position: relative;
+        }
+        
+        .timeline-date {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--primary-gradient);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-about h1 {
+                font-size: 2.5rem;
+            }
+            
+            .timeline::before {
+                left: 30px;
+            }
+            
+            .timeline-content {
+                width: calc(100% - 60px);
+                margin-left: 60px !important;
+                text-align: left !important;
+            }
+            
+            .timeline-date {
+                left: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line"></i> COT Analysis
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/features">Funzionalità</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pricing">Abbonamenti</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/about">Chi Siamo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/contact">Contatti</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-about">
+        <div class="container">
+            <h1>La Nostra Storia</h1>
+            <p>Rivoluzionando l'analisi finanziaria con intelligenza artificiale e dati COT di qualità istituzionale</p>
+        </div>
+    </section>
+
+    <!-- Story Section -->
+    <section class="story-section">
+        <div class="container">
+            <div class="row align-items-center mb-5">
+                <div class="col-lg-6">
+                    <h2 class="display-5 fw-bold mb-4">Come È Nata COT Analysis</h2>
+                    <p class="lead">Nel 2023, un team di trader professionisti e data scientist si è unito con una visione comune: democratizzare l'accesso alle analisi finanziarie di livello istituzionale.</p>
+                    <p>Frustrati dalla complessità e dai costi elevati degli strumenti professionali esistenti, abbiamo deciso di creare una piattaforma che combinasse la potenza dell'intelligenza artificiale con i dati COT (Commitment of Traders) per offrire previsioni accurate e accessibili a tutti.</p>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="story-card">
+                                <div class="story-icon">
+                                    <i class="fas fa-lightbulb"></i>
+                                </div>
+                                <h5>Innovazione</h5>
+                                <p>Utilizziamo le tecnologie più avanzate per analizzare i mercati</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="story-card">
+                                <div class="story-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h5>Accessibilità</h5>
+                                <p>Rendiamo l'analisi professionale alla portata di tutti</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="story-card">
+                                <div class="story-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <h5>Precisione</h5>
+                                <p>Previsioni basate su dati certificati e algoritmi proprietari</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="story-card">
+                                <div class="story-icon">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <h5>Globale</h5>
+                                <p>Analisi multi-asset per tutti i principali mercati mondiali</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Il Nostro Team</h2>
+                <p class="lead text-muted">Esperti in finanza, tecnologia e intelligenza artificiale</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="team-name">Marco Rossi</div>
+                        <div class="team-role">CEO & Founder</div>
+                        <div class="team-bio">
+                            Ex-trader presso Goldman Sachs con 15 anni di esperienza nei mercati derivati. Esperto in analisi COT e strategie quantitative.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="team-name">Sara Chen</div>
+                        <div class="team-role">CTO</div>
+                        <div class="team-bio">
+                            Data scientist e AI engineer con PhD in Machine Learning. Ha sviluppato sistemi di trading algoritmico per hedge fund internazionali.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="team-name">Alessandro Bianchi</div>
+                        <div class="team-role">Head of Research</div>
+                        <div class="team-bio">
+                            Analista quantitativo con esperienza in risk management e modellazione finanziaria. Specializzato in analisi macro e correlazioni di mercato.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="team-name">Dr. Elena Kovač</div>
+                        <div class="team-role">AI Research Director</div>
+                        <div class="team-bio">
+                            Ricercatrice in intelligenza artificiale applicata alla finanza. Autrice di numerose pubblicazioni su deep learning e sentiment analysis.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="team-name">Thomas Weber</div>
+                        <div class="team-role">Head of Security</div>
+                        <div class="team-bio">
+                            Esperto in cybersecurity finanziaria con certificazioni CISSP e CISA. Garantisce la protezione dei dati e la compliance normativa.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <div class="team-name">Lucia Martini</div>
+                        <div class="team-role">Customer Success</div>
+                        <div class="team-bio">
+                            Specialista in relazioni clienti con background in servizi finanziari. Si occupa del successo e della soddisfazione dei nostri utenti.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Values Section -->
+    <section class="values-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">I Nostri Valori</h2>
+                <p class="lead text-muted">I principi che guidano ogni nostra decisione</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="value-item">
+                        <div class="value-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <h5>Trasparenza</h5>
+                        <p class="text-muted">Metodologie aperte e risultati verificabili. I nostri utenti meritano di sapere esattamente come funzionano le nostre analisi.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="value-item">
+                        <div class="value-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h5>Educazione</h5>
+                        <p class="text-muted">Non solo strumenti, ma anche formazione. Aiutiamo i nostri utenti a comprendere e migliorare le proprie competenze.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="value-item">
+                        <div class="value-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h5>Innovazione</h5>
+                        <p class="text-muted">Ricerca continua e sviluppo di nuove tecnologie per rimanere sempre all'avanguardia nell'analisi finanziaria.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="value-item">
+                        <div class="value-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h5>Integrità</h5>
+                        <p class="text-muted">Operazioni etiche e responsabili. Il successo dei nostri utenti è la nostra priorità assoluta.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-item">
+                        <div class="stat-number">10K+</div>
+                        <div class="stat-label">Utenti Attivi</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-item">
+                        <div class="stat-number">85%</div>
+                        <div class="stat-label">Accuratezza Previsioni</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-item">
+                        <div class="stat-number">50M+</div>
+                        <div class="stat-label">Analisi Generate</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Monitoraggio Mercati</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Timeline Section -->
+    <section class="story-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">La Nostra Timeline</h2>
+                <p class="lead text-muted">I momenti chiave del nostro percorso</p>
+            </div>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h5>Gennaio 2023</h5>
+                        <p>Nascita dell'idea e formazione del team fondatore. Prime ricerche sui dati COT e algoritmi di machine learning applicati ai mercati finanziari.</p>
+                    </div>
+                    <div class="timeline-date">2023</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h5>Giugno 2023</h5>
+                        <p>Sviluppo del primo prototipo e test con un gruppo selezionato di trader professionali. Primo round di finanziamenti seed.</p>
+                    </div>
+                    <div class="timeline-date">Prototype</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h5>Ottobre 2023</h5>
+                        <p>Lancio della versione beta con le prime funzionalità di analisi COT e previsioni AI. Primi 1000 utenti registrati.</p>
+                    </div>
+                    <div class="timeline-date">Beta</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h5>Gennaio 2024</h5>
+                        <p>Lancio ufficiale della piattaforma con sistema di abbonamenti. Integrazione GPT-4 e analisi tecnica avanzata.</p>
+                    </div>
+                    <div class="timeline-date">Launch</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h5>Oggi</h5>
+                        <p>Oltre 10.000 utenti attivi, accuratezza delle previsioni all'85%, e continua innovazione per il futuro dell'analisi finanziaria.</p>
+                    </div>
+                    <div class="timeline-date">Now</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section class="mission-section">
+        <div class="container">
+            <div class="mission-card">
+                <h2 class="display-6 fw-bold mb-4">La Nostra Missione</h2>
+                <p class="lead mb-4">
+                    Democratizzare l'accesso alle analisi finanziarie di livello istituzionale, 
+                    rendendo gli strumenti di trading professionale accessibili a trader individuali, 
+                    investitori e piccole istituzioni finanziarie.
+                </p>
+                <p class="mb-4">
+                    Crediamo che ogni persona abbia il diritto di accedere a informazioni accurate 
+                    e strumenti sofisticati per prendere decisioni di investimento informate. 
+                    La nostra piattaforma combina l'analisi dei dati COT con l'intelligenza 
+                    artificiale per offrire previsioni di mercato precise e actionable insights.
+                </p>
+                <div class="row text-start mt-5">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-target text-primary me-2"></i>Visione</h6>
+                        <p class="small text-muted">Diventare la piattaforma di riferimento mondiale per l'analisi predittiva dei mercati finanziari</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-compass text-primary me-2"></i>Obiettivo</h6>
+                        <p class="small text-muted">Migliorare le performance di trading di milioni di investitori attraverso la tecnologia</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-handshake text-primary me-2"></i>Impegno</h6>
+                        <p class="small text-muted">Fornire sempre dati accurati, analisi trasparenti e supporto eccellente ai nostri utenti</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container text-center">
+            <h2 class="display-5 fw-bold mb-4">Unisciti alla Rivoluzione</h2>
+            <p class="lead mb-4">Scopri come migliaia di trader stanno già migliorando le loro performance</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="/register" class="btn btn-light btn-lg px-5">
+                    <i class="fas fa-rocket"></i> Inizia Ora
+                </a>
+                <a href="/contact" class="btn btn-outline-light btn-lg px-5">
+                    <i class="fas fa-comments"></i> Contattaci
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><i class="fas fa-chart-line"></i> COT Analysis</h5>
+                    <p class="text-muted">La piattaforma professionale per l'analisi dei mercati finanziari con intelligenza artificiale.</p>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Prodotto</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/features" class="text-muted">Funzionalità</a></li>
+                        <li><a href="/pricing" class="text-muted">Prezzi</a></li>
+                        <li><a href="/api" class="text-muted">API</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Azienda</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/about" class="text-muted">Chi Siamo</a></li>
+                        <li><a href="/contact" class="text-muted">Contatti</a></li>
+                        <li><a href="/careers" class="text-muted">Lavora con noi</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Legale</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/privacy" class="text-muted">Privacy</a></li>
+                        <li><a href="/terms" class="text-muted">Termini</a></li>
+                        <li><a href="/disclaimer" class="text-muted">Disclaimer</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Support</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/help" class="text-muted">Centro Aiuto</a></li>
+                        <li><a href="/tutorials" class="text-muted">Tutorial</a></li>
+                        <li><a href="/status" class="text-muted">Stato Servizi</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center text-muted">
+                <small>&copy; 2024 COT Analysis Platform. Tutti i diritti riservati.</small>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Animazione numeri statistiche
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = Math.floor(progress * (end - start) + start);
+                element.innerHTML = end > 100 ? current.toLocaleString() + (element.dataset.suffix || '') : current + (element.dataset.suffix || '');
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Observer per animazioni al scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (entry.target.classList.contains('stat-number')) {
+                        const finalValue = parseInt(entry.target.dataset.value || entry.target.textContent.replace(/\D/g, ''));
+                        animateValue(entry.target, 0, finalValue, 2000);
+                    } else {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                }
+            });
+        });
+
+        // Applica observer agli elementi
+        document.querySelectorAll('.team-card, .story-card, .timeline-content').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'all 0.6s ease';
+            observer.observe(el);
+        });
+
+        // Prepara animazione statistiche
+        document.querySelectorAll('.stat-number').forEach(el => {
+            const text = el.textContent;
+            const value = text.replace(/\D/g, '');
+            const suffix = text.replace(/[\d,]/g, '');
+            el.dataset.value = value;
+            el.dataset.suffix = suffix;
+            el.textContent = '0';
+            observer.observe(el);
+        });
+
+        // Parallax effect per l'hero
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.5;
+            const hero = document.querySelector('.hero-about');
+            if (hero) {
+                hero.style.transform = `translateY(${rate}px)`;
+            }
+        });
+    </script>
+</body>
+</html>

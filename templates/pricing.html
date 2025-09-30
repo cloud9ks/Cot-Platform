@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abbonamenti - COT Analysis Platform</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --dark-bg: #1e293b;
+            --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: var(--primary-gradient) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand, .nav-link {
+            color: white !important;
+            font-weight: 600;
+        }
+        
+        .nav-link:hover {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        
+        .hero-pricing {
+            background: var(--primary-gradient);
+            padding: 100px 0 80px;
+            color: white;
+            text-align: center;
+        }
+        
+        .hero-pricing h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+        
+        .hero-pricing p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .pricing-section {
+            padding: 80px 0;
+            margin-top: -50px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        
+        .pricing-card.featured {
+            transform: scale(1.05);
+            border: 3px solid #667eea;
+        }
+        
+        .pricing-card.featured::before {
+            content: 'PIÙ POPOLARE';
+            position: absolute;
+            top: 20px;
+            right: -30px;
+            background: var(--primary-gradient);
+            color: white;
+            padding: 8px 40px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transform: rotate(45deg);
+        }
+        
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-bg);
+            margin-bottom: 10px;
+        }
+        
+        .plan-price {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .plan-price small {
+            font-size: 1rem;
+            color: #6b7280;
+            font-weight: normal;
+        }
+        
+        .plan-description {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 30px;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list .fa-check {
+            color: #10b981;
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .feature-list .fa-times {
+            color: #ef4444;
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-pricing {
+            width: 100%;
+            padding: 15px;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary-pricing {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+        }
+        
+        .btn-primary-pricing:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-outline-pricing {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+        
+        .btn-outline-pricing:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .comparison-section {
+            background: white;
+            padding: 80px 0;
+        }
+        
+        .comparison-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .comparison-table th {
+            background: var(--primary-gradient);
+            color: white;
+            font-weight: 600;
+            padding: 20px;
+            border: none;
+        }
+        
+        .comparison-table td {
+            padding: 15px 20px;
+            border: 1px solid #f1f5f9;
+            text-align: center;
+        }
+        
+        .comparison-table .fa-check {
+            color: #10b981;
+            font-size: 1.2rem;
+        }
+        
+        .comparison-table .fa-times {
+            color: #ef4444;
+            font-size: 1.2rem;
+        }
+        
+        .faq-section {
+            background: #f8f9fa;
+            padding: 80px 0;
+        }
+        
+        .accordion-button {
+            font-weight: 600;
+            color: var(--dark-bg);
+        }
+        
+        .accordion-button:not(.collapsed) {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .cta-section {
+            background: var(--dark-bg);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .guarantee-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        
+        .guarantee-badge .fa-shield-alt {
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-pricing h1 {
+                font-size: 2.5rem;
+            }
+            
+            .pricing-card.featured {
+                transform: none;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line"></i> COT Analysis
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/features.html">Funzionalità</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/pricing.html">Abbonamenti</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about.html">Chi Siamo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/contact.html">Contatti</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-pricing">
+        <div class="container">
+            <h1>Scegli il Tuo Piano</h1>
+            <p>Analisi professionale COT per ogni tipo di trader e investitore</p>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section">
+        <div class="container">
+            <div class="row g-4">
+                <!-- Piano Free -->
+                <div class="col-lg-4">
+                    <div class="pricing-card">
+                        <div class="plan-name">Starter</div>
+                        <div class="plan-price">€0<small>/mese</small></div>
+                        <div class="plan-description">Perfetto per iniziare a esplorare l'analisi COT</div>
+                        
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> 3 asset monitorati</li>
+                            <li><i class="fas fa-check"></i> Dati COT base (settimanali)</li>
+                            <li><i class="fas fa-check"></i> Grafici interattivi</li>
+                            <li><i class="fas fa-check"></i> Analisi semplificata</li>
+                            <li><i class="fas fa-times"></i> Previsioni AI</li>
+                            <li><i class="fas fa-times"></i> Alert personalizzati</li>
+                            <li><i class="fas fa-times"></i> Analisi tecnica avanzata</li>
+                            <li><i class="fas fa-times"></i> Support prioritario</li>
+                        </ul>
+                        
+                        <a href="/register.html?plan=starter" class="btn-pricing btn-outline-pricing">
+                            Inizia Gratis
+                        </a>
+                        
+                        <div class="guarantee-badge">
+                            <i class="fas fa-shield-alt"></i>
+                            Sempre gratuito
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Piano Professional -->
+                <div class="col-lg-4">
+                    <div class="pricing-card featured">
+                        <div class="plan-name">Professional</div>
+                        <div class="plan-price">€49<small>/mese</small></div>
+                        <div class="plan-description">La soluzione completa per trader professionali</div>
+                        
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Tutti gli asset disponibili</li>
+                            <li><i class="fas fa-check"></i> Dati COT in tempo reale</li>
+                            <li><i class="fas fa-check"></i> Previsioni AI GPT-4</li>
+                            <li><i class="fas fa-check"></i> Alert intelligenti</li>
+                            <li><i class="fas fa-check"></i> Analisi tecnica completa</li>
+                            <li><i class="fas fa-check"></i> Backtesting avanzato</li>
+                            <li><i class="fas fa-check"></i> Export dati CSV/PDF</li>
+                            <li><i class="fas fa-check"></i> Support via email</li>
+                        </ul>
+                        
+                        <a href="/register.html?plan=professional" class="btn-pricing btn-primary-pricing">
+                            Inizia Prova Gratuita
+                        </a>
+                        
+                        <div class="guarantee-badge">
+                            <i class="fas fa-shield-alt"></i>
+                            30 giorni di garanzia
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Piano Enterprise -->
+                <div class="col-lg-4">
+                    <div class="pricing-card">
+                        <div class="plan-name">Enterprise</div>
+                        <div class="plan-price">€199<small>/mese</small></div>
+                        <div class="plan-description">Per team e istituzioni finanziarie</div>
+                        
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Tutte le funzioni Professional</li>
+                            <li><i class="fas fa-check"></i> API dedicata</li>
+                            <li><i class="fas fa-check"></i> Utenti multipli (fino a 10)</li>
+                            <li><i class="fas fa-check"></i> Dashboard personalizzata</li>
+                            <li><i class="fas fa-check"></i> Integrazione trading platforms</li>
+                            <li><i class="fas fa-check"></i> Consulenza personalizzata</li>
+                            <li><i class="fas fa-check"></i> Support telefonico 24/7</li>
+                            <li><i class="fas fa-check"></i> White label disponibile</li>
+                        </ul>
+                        
+                        <a href="/contact.html?enterprise=true" class="btn-pricing btn-outline-pricing">
+                            Contattaci
+                        </a>
+                        
+                        <div class="guarantee-badge">
+                            <i class="fas fa-shield-alt"></i>
+                            SLA garantito 99.9%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Confronto Dettagliato</h2>
+                <p class="lead text-muted">Tutte le funzionalità a confronto</p>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table comparison-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Funzionalità</th>
+                            <th>Starter</th>
+                            <th>Professional</th>
+                            <th>Enterprise</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">Asset monitorati</td>
+                            <td>3</td>
+                            <td>Illimitati</td>
+                            <td>Illimitati</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">Aggiornamenti dati</td>
+                            <td>Settimanali</td>
+                            <td>Real-time</td>
+                            <td>Real-time</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">Previsioni AI</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">Alert personalizzati</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">Analisi tecnica</td>
+                            <td>Base</td>
+                            <td>Avanzata</td>
+                            <td>Avanzata</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">Backtesting</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">API Access</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td>Limitato</td>
+                            <td>Completo</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">Utenti team</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; font-weight: 600;">Support</td>
+                            <td>Community</td>
+                            <td>Email</td>
+                            <td>24/7 Phone</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Domande Frequenti</h2>
+                <p class="lead text-muted">Tutto quello che devi sapere sui nostri piani</p>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    Posso cambiare piano in qualsiasi momento?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Assolutamente sì! Puoi fare upgrade o downgrade del tuo piano in qualsiasi momento. Le modifiche saranno attive immediatamente e la fatturazione verrà adeguata proporzionalmente.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    È disponibile una prova gratuita?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Sì! Il piano Professional include 30 giorni di prova gratuita. Puoi cancellare in qualsiasi momento senza costi. Inoltre, il piano Starter è sempre gratuito.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    Quali metodi di pagamento accettate?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Accettiamo tutte le principali carte di credito (Visa, Mastercard, American Express), PayPal, bonifico bancario e per i piani Enterprise anche pagamenti personalizzati.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    I dati sono sicuri e affidabili?
+                                </button>
+                            </h2>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    I nostri dati provengono direttamente dalla CFTC (Commodity Futures Trading Commission) e sono certificati. Utilizziamo crittografia bancaria e backup multipli per garantire sicurezza e disponibilità.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                    Come funzionano le previsioni AI?
+                                </button>
+                            </h2>
+                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Le nostre previsioni utilizzano GPT-4 combinato con algoritmi di machine learning proprietari. Analizziamo pattern COT, sentiment di mercato, correlazioni e indicatori tecnici per generare previsioni con un'accuratezza media dell'85%.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container text-center">
+            <h2 class="display-5 fw-bold mb-4">Pronto a Iniziare?</h2>
+            <p class="lead mb-4">Unisciti a migliaia di trader che già utilizzano le nostre analisi</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="/register.html?plan=professional" class="btn btn-light btn-lg px-5">
+                    <i class="fas fa-rocket"></i> Prova Gratuita 30 Giorni
+                </a>
+                <a href="/contact.html" class="btn btn-outline-light btn-lg px-5">
+                    <i class="fas fa-comments"></i> Parla con un Esperto
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><i class="fas fa-chart-line"></i> COT Analysis</h5>
+                    <p class="text-muted">La piattaforma professionale per l'analisi dei mercati finanziari con intelligenza artificiale.</p>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Prodotto</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/features.html" class="text-muted">Funzionalità</a></li>
+                        <li><a href="/pricing.html" class="text-muted">Prezzi</a></li>
+                        <li><a href="/api" class="text-muted">API</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Azienda</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/about.html" class="text-muted">Chi Siamo</a></li>
+                        <li><a href="/contact.html" class="text-muted">Contatti</a></li>
+                        <li><a href="/careers" class="text-muted">Lavora con noi</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Legale</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/privacy" class="text-muted">Privacy</a></li>
+                        <li><a href="/terms" class="text-muted">Termini</a></li>
+                        <li><a href="/disclaimer" class="text-muted">Disclaimer</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6>Support</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/help" class="text-muted">Centro Aiuto</a></li>
+                        <li><a href="/tutorials" class="text-muted">Tutorial</a></li>
+                        <li><a href="/status" class="text-muted">Stato Servizi</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center text-muted">
+                <small>&copy; 2024 COT Analysis Platform. Tutti i diritti riservati.</small>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Tracking
+        document.querySelectorAll('[href*="/register"]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const plan = new URL(this.href).searchParams.get('plan');
+                console.log(`Piano selezionato: ${plan}`);
+            });
+        });
+        
+        // Animazioni scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        });
+        
+        document.querySelectorAll('.pricing-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = 'all 0.6s ease';
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

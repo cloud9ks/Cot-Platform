@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>COT Analysis Platform · Dashboard Professionale</title>
+
+  <!-- Font + Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+  <!-- Bootstrap (CSS) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --primary:#2563eb; --secondary:#10b981; --danger:#ef4444; --warning:#f59e0b;
+      --dark:#0f172a; --muted:#64748b; --light:#f8fafc; --card-bg:#ffffff; --success:#10b981;
+    }
+    *{box-sizing:border-box}
+    body{
+      background:radial-gradient(1200px 600px at 10% -10%, #93c5fd33, transparent),
+                 radial-gradient(1000px 500px at 110% 10%, #c084fc33, transparent),
+                 linear-gradient(135deg, #e2e8f0, #f8fafc);
+      font-family:Inter, system-ui, -apple-system, sans-serif; min-height:100vh; color:#0f172a;
+    }
+    .dashboard-container{background:rgba(255,255,255,.95); backdrop-filter:saturate(1.2) blur(12px);
+      border-radius:20px; margin:24px auto; padding:28px; box-shadow:0 20px 60px rgba(2,6,23,.12); max-width:1600px;}
+    .card-enhanced{background:var(--card-bg); border-radius:16px; padding:20px;
+      box-shadow:0 4px 20px rgba(2,6,23,.08); border:1px solid rgba(2,6,23,.06);
+      transition:transform .25s ease, box-shadow .25s ease; height:100%;}
+    .card-enhanced:hover{transform:translateY(-4px); box-shadow:0 12px 40px rgba(2,6,23,.15);}
+    .symbol-selector{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;}
+    .symbol-btn{padding:12px 20px; border:2px solid var(--primary); background:#fff; color:var(--primary);
+      border-radius:12px; cursor:pointer; transition:all .2s ease; font-weight:700; letter-spacing:.3px; position:relative; overflow:hidden;}
+    .symbol-btn:hover{background:var(--primary); color:#fff; transform:translateY(-2px); box-shadow:0 6px 20px rgba(37,99,235,.3);}
+    .symbol-btn.active{background:var(--primary); color:#fff;}
+    .symbol-btn::after{content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent); transition:left .5s; z-index:1;}
+    .symbol-btn:hover::after{left:100%;}
+    .signal-box{display:inline-block; padding:8px 16px; border-radius:999px; font-weight:700; font-size:13px; letter-spacing:.3px; text-transform:uppercase;}
+    .signal-bullish{background:linear-gradient(135deg,#10b981,#34d399); color:#fff;}
+    .signal-bearish{background:linear-gradient(135deg,#ef4444,#f87171); color:#fff;}
+    .signal-neutral{background:linear-gradient(135deg,#6b7280,#9ca3af); color:#fff;}
+    .signal-strong-buy{background:linear-gradient(135deg,#059669,#10b981); color:#fff;}
+    .signal-strong-sell{background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff;}
+    .chart-card{background:var(--card-bg); border-radius:16px; padding:20px; box-shadow:0 4px 20px rgba(2,6,23,.08); border:1px solid rgba(2,6,23,.06);}
+    .chart-wrap{position:relative; height:400px;}
+    .progress-custom{width:100%; height:30px; background:#e5e7eb; border-radius:15px; overflow:hidden; position:relative;}
+    .progress-bar-custom{height:100%; transition:width .8s ease; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; border-radius:15px;}
+    .live-indicator{width:10px; height:10px; display:inline-block; background:#10b981; border-radius:50%; box-shadow:0 0 0 0 rgba(16,185,129,.7); animation:pulse 2s infinite; margin-right:6px;}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.6)} 70%{box-shadow:0 0 0 8px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+    .table-custom{background:#fff; border-radius:12px; overflow:hidden;}
+    .table-custom thead{background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;}
+    .alert-custom{border-radius:12px; border-left:4px solid; backdrop-filter:blur(10px); background:rgba(255,255,255,.9);}
+    .nav-tabs-custom .nav-link{border-radius:12px 12px 0 0; border:none; background:rgba(255,255,255,.7); margin-right:4px; transition:all .3s ease;}
+    .nav-tabs-custom .nav-link.active{background:var(--primary); color:white;}
+    .nav-tabs-custom .nav-link:hover:not(.active){background:rgba(37,99,235,.1);}
+    .economic-event{border-left:4px solid var(--primary); background:rgba(37,99,235,.05); padding:12px; border-radius:8px; margin-bottom:8px;}
+    .economic-event.high-impact{border-color:var(--danger); background:rgba(239,68,68,.05);}
+    .economic-event.medium-impact{border-color:var(--warning); background:rgba(245,158,11,.05);}
+    .metric-card{text-align:center; padding:20px; background:linear-gradient(135deg,#667eea 0%, #764ba2 100%); color:white; border-radius:16px; margin-bottom:15px;}
+    .metric-value{font-size:2.5rem; font-weight:800; margin-bottom:5px;}
+    .metric-label{font-size:.9rem; opacity:.9;}
+    .muted{color:var(--muted);} .loading{text-align:center; padding:40px; color:var(--muted);} .spinner-border{width:2rem; height:2rem;} .btn-loading{pointer-events:none; opacity:.6;}
+    @media (max-width:768px){.dashboard-container{margin:12px; padding:16px;} .symbol-btn{padding:8px 12px; font-size:12px;} .chart-wrap{height:300px;} .metric-value{font-size:2rem;}}
+    ::-webkit-scrollbar{width:8px;} ::-webkit-scrollbar-track{background:#f1f5f9; border-radius:10px;} ::-webkit-scrollbar-thumb{background:var(--primary); border-radius:10px;} ::-webkit-scrollbar-thumb:hover{background:#1d4ed8;}
+    
+    /* ===== GPT ANALYSIS BOX PREMIUM STYLES ===== */
+    #gptAnalysis .gpt-premium {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      padding: 30px;
+      color: white;
+      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+    }
+
+    #gptAnalysis .gpt-direction-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    #gptAnalysis .gpt-confidence-gauge {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 20px auto;
+    }
+
+    #gptAnalysis .gpt-confidence-gauge svg {
+      transform: rotate(-90deg);
+    }
+
+    #gptAnalysis .gpt-confidence-gauge circle {
+      fill: none;
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+
+    #gptAnalysis .gpt-confidence-bg {
+      stroke: rgba(255, 255, 255, 0.2);
+    }
+
+    #gptAnalysis .gpt-confidence-fill {
+      stroke: white;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 283;
+      transition: stroke-dashoffset 1s ease;
+    }
+
+    #gptAnalysis .gpt-confidence-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      font-weight: 800;
+      color: white;
+    }
+
+    #gptAnalysis .gpt-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+
+    #gptAnalysis .gpt-bullets li {
+      position: relative;
+      padding-left: 30px;
+      margin-bottom: 12px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    #gptAnalysis .gpt-bullets li:before {
+      content: "●";
+      position: absolute;
+      left: 0;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.2rem;
+    }
+
+    #gptAnalysis .gpt-levels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    #gptAnalysis .gpt-level-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    #gptAnalysis .gpt-level-label {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #gptAnalysis .gpt-level-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    /* Loading state migliorato */
+    #gptAnalysis .loading {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      padding: 60px 30px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="mb-1 fw-bold">
+          <i class="fa-solid fa-chart-line text-primary me-2"></i>
+          COT Analysis Platform
+        </h1>
+        <p class="muted mb-0">
+          <span class="live-indicator"></span>
+          Analisi Professionale dei Dati COT con AI
+          <span id="systemStatus" class="badge bg-success ms-1">Sistema Online</span>
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" id="btnSystemStatus" title="Status Sistema">
+          <i class="fa-solid fa-server"></i>
+        </button>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+<span class="badge bg-purple me-2">
+  <i class="fa-solid fa-crown"></i> ADMIN
+</span>
+<button class="btn btn-outline-primary" id="btnRefresh">
+          <i class="fa-solid fa-rotate-right"></i> Aggiorna
+        </button>
+        <button class="btn btn-success" id="btnRun">
+          <i class="fa-solid fa-brain"></i> Analisi AI
+        </button>
+{% else %}
+<span class="badge bg-success">
+  <i class="fa-solid fa-clock-rotate-left"></i>
+  Auto-aggiornamento attivo
+</span>
+{% endif %}
+      </div>
+    </div>
+
+    <!-- Symbol Selector -->
+    <div id="symbolSelector" class="symbol-selector">
+      <div class="loading">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-2">Caricamento simboli...</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    
+<!-- Info per utenti normali -->
+{% if current_user.is_authenticated and not current_user.is_admin %}
+<div class="alert alert-info d-flex align-items-start gap-3 mb-4">
+  <i class="fa-solid fa-circle-info fs-4"></i>
+  <div>
+    <h6 class="mb-1">Dati Aggiornati Automaticamente</h6>
+    <p class="mb-0 small">
+      Il sistema aggiorna automaticamente le analisi ogni Martedì alle 21:00.
+      Visualizzi sempre i dati più recenti!
+    </p>
+  </div>
+</div>
+{% endif %}
+
+<ul class="nav nav-tabs nav-tabs-custom mb-4" id="mainTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+          <i class="fa-solid fa-chart-pie me-1"></i> Panoramica
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts" type="button" role="tab">
+          <i class="fa-solid fa-chart-line me-1"></i> Grafici COT
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="technical-tab" data-bs-toggle="tab" data-bs-target="#technical" type="button" role="tab">
+          <i class="fa-solid fa-chart-area me-1"></i> Analisi Tecnica
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="economic-tab" data-bs-toggle="tab" data-bs-target="#economic" type="button" role="tab">
+          <i class="fa-solid fa-globe me-1"></i> Dati Economici
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="predictions-tab" data-bs-toggle="tab" data-bs-target="#predictions" type="button" role="tab">
+          <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Previsioni
+        </button>
+      </li>
+    </ul>
+
+    <!-- Content -->
+    <div class="tab-content" id="mainTabsContent">
+      <!-- Panoramica -->
+      <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-3">
+            <div class="card-enhanced">
+              <h6 class="muted">Net Position</h6>
+              <div class="d-flex align-items-end gap-2">
+                <h3 id="netPosition" class="mb-0"></h3>
+                <small id="netChange" class="fw-bold"></small>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="card-enhanced">
+              <h6 class="muted">Sentiment Score</h6>
+              <h3 id="sentimentScore" class="mb-2"></h3>
+              <div class="progress-custom">
+                <div id="sentimentBar" class="progress-bar-custom" style="width:0%">0%</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="card-enhanced">
+              <h6 class="muted">Previsione AI</h6>
+              <div id="aiPrediction">
+                <span class="signal-box signal-neutral">IN ATTESA</span>
+              </div>
+              <small class="muted d-block mt-2">Confidenza: <span id="confidence"></span>%</small>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="card-enhanced">
+              <h6 class="muted">Ultimo Aggiornamento</h6>
+              <h3 id="lastUpdate" class="mb-1"></h3>
+              <small class="muted">Sistema attivo</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-lg-6">
+            <div class="card-enhanced">
+              <h5 class="mb-3"><i class="fa-solid fa-tachometer-alt text-primary me-2"></i>Analisi Rapida</h5>
+              <div id="quickAnalysis">
+                <div class="loading">Seleziona un simbolo per vedere l'analisi rapida</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="card-enhanced">
+              <h5 class="mb-3"><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i>Alert e Notifiche</h5>
+              <div id="alertsPanel">
+                <div class="text-muted">Nessun alert attivo</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-enhanced">
+          <h5 class="mb-3"><i class="fa-solid fa-globe text-success me-2"></i>Panoramica Mercato</h5>
+          <div id="marketOverview">
+            <div class="loading">Caricamento panoramica mercato...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grafici COT -->
+      <div class="tab-pane fade" id="charts" role="tabpanel">
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-lg-8">
+            <div class="card-enhanced">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Posizioni COT · Trend Storico</h5>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary active" data-period="30">30D</button>
+                  <button class="btn btn-outline-primary" data-period="90">90D</button>
+                  <button class="btn btn-outline-primary" data-period="365">1Y</button>
+                </div>
+              </div>
+              <div class="chart-wrap"><canvas id="cotChart"></canvas></div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card-enhanced">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Distribuzione Posizioni</h5>
+              </div>
+              <div class="chart-wrap" style="height:350px"><canvas id="pieChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-enhanced">
+          <h5 class="mb-3">Dati COT Dettagliati</h5>
+          <div class="table-responsive">
+            <table class="table table-custom mb-0">
+              <thead>
+                <tr>
+                  <th>Data</th><th>NC Long</th><th>NC Short</th><th>Commercial Long</th>
+                  <th>Commercial Short</th><th>Net Position</th><th>Sentiment</th>
+                </tr>
+              </thead>
+              <tbody id="cotDataTable">
+                <tr><td colspan="7" class="text-center py-4">Caricamento dati COT...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analisi Tecnica -->
+      <div class="tab-pane fade" id="technical" role="tabpanel">
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-6">
+            <div class="card-enhanced">
+              <h5 class="mb-3">Supporti e Resistenze</h5>
+              <div id="supportResistance"><div class="loading">Caricamento livelli S/R...</div></div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="card-enhanced">
+              <h5 class="mb-3">Segnali Tecnici</h5>
+              <div id="technicalSignals"><div class="loading">Caricamento segnali tecnici...</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-enhanced mb-4">
+          <h5 class="mb-3">Grafico Prezzi con Livelli</h5>
+          <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+        </div>
+
+        <div class="card-enhanced">
+          <h5 class="mb-3">Indicatori Tecnici</h5>
+          <div class="row" id="technicalIndicators">
+            <div class="col-12"><div class="loading">Caricamento indicatori...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dati Economici -->
+      <div class="tab-pane fade" id="economic" role="tabpanel">
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-lg-8">
+            <div class="card-enhanced">
+              <h5 class="mb-3">Indicatori Economici Chiave</h5>
+              <div id="economicIndicators"><div class="loading">Caricamento indicatori economici...</div></div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card-enhanced">
+              <h5 class="mb-3">Fed Watch Tool</h5>
+              <div id="fedWatch"><div class="loading">Caricamento Fed Watch...</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-enhanced">
+          <h5 class="mb-3">Calendario Economico</h5>
+          <div id="economicCalendar"><div class="loading">Caricamento calendario...</div></div>
+        </div>
+      </div>
+
+      <!-- Previsioni -->
+      <div class="tab-pane fade" id="predictions" role="tabpanel">
+        <div class="card-enhanced mb-4">
+          <h5 class="mb-3">Analisi GPT</h5>
+          <div id="gptAnalysis" class="p-3 bg-light rounded">
+            <div class="loading">
+              <p class="mb-0">Seleziona un simbolo e clicca "Analisi AI" per avviare lo scraping e l'analisi.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-enhanced mb-4">
+          <h5 class="mb-3">Storico Previsioni</h5>
+          <div class="table-responsive">
+            <table class="table table-custom mb-0">
+              <thead>
+                <tr>
+                  <th>Data</th><th>Simbolo</th><th>Previsione</th><th>Confidenza</th>
+                  <th>ML Score</th><th>Status</th><th>Accuratezza</th>
+                </tr>
+              </thead>
+              <tbody id="predictionsTable">
+                <tr><td colspan="7" class="text-center text-muted py-4">Nessuna previsione disponibile. Esegui un'analisi per generare predizioni.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card-enhanced">
+          <h5 class="mb-3">Status Sistema</h5>
+          <div class="row g-3" id="systemStatusDetail">
+            <div class="col-md-3"><div class="metric-card"><div class="metric-value"></div><div class="metric-label">Database</div></div></div>
+            <div class="col-md-3"><div class="metric-card"><div class="metric-value"></div><div class="metric-label">OpenAI API</div></div></div>
+            <div class="col-md-3"><div class="metric-card"><div class="metric-value"></div><div class="metric-label">Machine Learning</div></div></div>
+            <div class="col-md-3"><div class="metric-card"><div class="metric-value"></div><div class="metric-label">Selenium</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="mt-4" id="alertsContainer"></div>
+    
+  </div>
+  <!-- Bootstrap (JS – necessario per i tab) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  
+  <!-- Dashboard Script -->
+  <script src="{{ url_for('static', filename='js/dashboard-enhanced.js') }}" charset="utf-8"></script>
+</body>
+</html>
