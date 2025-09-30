@@ -74,7 +74,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     first_name = db.Column(db.String(80))
     last_name = db.Column(db.String(80))
-    password_hash = db.Column(db.String(128))
+    password_hash = db.Column(db.String(256))
     is_admin = db.Column(db.Boolean, default=False)  # 🆕 Campo admin
     subscription_plan = db.Column(db.String(20), default='starter')
     subscription_status = db.Column(db.String(20), default='active')
