@@ -1416,7 +1416,58 @@ def dashboard():
     """Dashboard principale con context utente"""
     return render_template('dashboard.html', 
                          current_user=current_user)
+@app.route('/api/validate-discount', methods=['POST'])
+def validate_discount():
+    data = request.json
+    code = data.get('code', '').upper()
+    plan = data.get('plan')
+    
+    # Database di codici sconto (sostituisci con DB reale)
+    discount_codes = {
+        'PROMO10': {'discount': 10, 'type': 'percentage'},  # 10%
+        'SAVE5': {'discount': 5, 'type': 'fixed'},  # €5 fissi
+        'WELCOME20': {'discount': 20, 'type': 'percentage'}  # 20%
+    }
+    
+    if code in discount_codes:
+        disc = discount_codes[code]
+        price = float(data.get('price', 0))
+        
+        if disc['type'] == 'percentage':
+            discount_amount = price * (disc['discount'] / 100)
+        else:
+            discount_amount = disc['discount']
+            
+        return jsonify({
+            'valid': True,
+            'discount': discount_amount,
+            'code': code
+        })
+    else:
+        return jsonify({'valid': False})
 
+@app.route('/api/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    data = request.json
+    
+    # Qui integrerai Stripe domani
+    # Per ora simuliamo il successo
+    
+    try:
+        # Stripe integration placeholder
+        # stripe_session = stripe.checkout.Session.create(...)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Pagamento in elaborazione',
+            'checkoutUrl': '/dashboard'  # Domani sarà l'URL Stripe
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+        
 @app.route('/<path:filename>')
 def serve_html_files(filename):
     """Serve file HTML statici"""

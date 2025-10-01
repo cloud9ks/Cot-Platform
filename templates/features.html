@@ -200,109 +200,11 @@
             margin-bottom: 20px;
         }
         
-        .integration-section {
-            padding: 80px 0;
-            background: var(--dark-bg);
-            color: white;
-        }
-        
-        .integration-card {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            text-align: center;
-            transition: transform 0.3s;
-        }
-        
-        .integration-card:hover {
-            transform: translateY(-10px);
-            background: rgba(255,255,255,0.15);
-        }
-        
-        .integration-icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .demo-section {
-            padding: 100px 0;
-            background: #f8f9fa;
-        }
-        
-        .demo-video {
-            background: var(--dark-bg);
-            border-radius: 20px;
-            padding: 60px;
-            text-align: center;
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .demo-video::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--primary-gradient);
-            opacity: 0.1;
-        }
-        
-        .play-button {
-            width: 100px;
-            height: 100px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 30px;
-            font-size: 2rem;
-            color: #667eea;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .play-button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 30px rgba(255,255,255,0.3);
-        }
-        
         .cta-section {
             padding: 80px 0;
             background: var(--primary-gradient);
             color: white;
             text-align: center;
-        }
-        
-        .comparison-toggle {
-            background: white;
-            border-radius: 50px;
-            padding: 5px;
-            display: inline-flex;
-            margin-bottom: 40px;
-        }
-        
-        .toggle-btn {
-            padding: 10px 30px;
-            border: none;
-            background: transparent;
-            border-radius: 50px;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-        
-        .toggle-btn.active {
-            background: var(--primary-gradient);
-            color: white;
         }
         
         @media (max-width: 768px) {
@@ -358,8 +260,8 @@
     <!-- Hero Section -->
     <section class="hero-features">
         <div class="container">
-            <h1>Funzionalità Avanzate</h1>
-            <p>Scopri tutti gli strumenti e le tecnologie che rendono COT Analysis la piattaforma più potente per l'analisi dei mercati finanziari</p>
+            <h1>Funzionalità della Piattaforma</h1>
+            <p>Strumenti professionali per l'analisi COT, machine learning e previsioni AI integrate in un'unica piattaforma</p>
         </div>
     </section>
 
@@ -374,13 +276,13 @@
                             <div class="feature-badge">
                                 <i class="fas fa-brain"></i> INTELLIGENZA ARTIFICIALE
                             </div>
-                            <h2 class="display-6 fw-bold mb-3">Previsioni AI con GPT-4</h2>
-                            <p class="lead mb-4">Il nostro sistema utilizza GPT-4 e algoritmi di machine learning proprietari per analizzare i dati COT e generare previsioni accurate sui movimenti di mercato.</p>
+                            <h2 class="display-6 fw-bold mb-3">Analisi AI con Machine Learning</h2>
+                            <p class="lead mb-4">Il nostro sistema utilizza algoritmi di machine learning proprietari per analizzare i dati COT e generare previsioni sui movimenti di mercato.</p>
                             <ul class="list-unstyled">
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Analisi sentiment in tempo reale</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Pattern recognition avanzato</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Correlazioni multi-asset</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Backtesting automatico</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Analisi sentiment dei dati COT</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Pattern recognition automatico</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Previsioni basate su dati storici</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Aggiornamento automatico ogni martedì</li>
                             </ul>
                         </div>
                     </div>
@@ -398,15 +300,15 @@
                     <div class="col-lg-6">
                         <div class="feature-content">
                             <div class="feature-badge">
-                                <i class="fas fa-sync-alt"></i> DATI IN TEMPO REALE
+                                <i class="fas fa-sync-alt"></i> DATI AGGIORNATI
                             </div>
-                            <h2 class="display-6 fw-bold mb-3">Aggiornamenti Automatici</h2>
-                            <p class="lead mb-4">Ricevi i dati COT più aggiornati direttamente dalla CFTC ogni martedì, con elaborazione automatica e notifiche immediate sui cambiamenti significativi.</p>
+                            <h2 class="display-6 fw-bold mb-3">Dati COT Certificati CFTC</h2>
+                            <p class="lead mb-4">Ricevi i dati COT ufficiali direttamente dalla CFTC ogni martedì, con elaborazione automatica e analisi immediate.</p>
                             <ul class="list-unstyled">
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Dati certificati CFTC</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Processamento automatico</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Alert personalizzabili</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Cronologia completa</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Dati certificati e ufficiali</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Scraping automatico CFTC</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Elaborazione immediata</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Storico completo disponibile</li>
                             </ul>
                         </div>
                     </div>
@@ -426,13 +328,13 @@
                             <div class="feature-badge">
                                 <i class="fas fa-chart-bar"></i> VISUALIZZAZIONE
                             </div>
-                            <h2 class="display-6 fw-bold mb-3">Grafici Interattivi Avanzati</h2>
-                            <p class="lead mb-4">Esplora i dati con grafici interattivi professionali, overlay di indicatori tecnici e strumenti di analisi integrati per una comprensione completa dei mercati.</p>
+                            <h2 class="display-6 fw-bold mb-3">Grafici Interattivi</h2>
+                            <p class="lead mb-4">Esplora i dati con grafici interattivi professionali e visualizzazioni intuitive per una comprensione immediata dei mercati.</p>
                             <ul class="list-unstyled">
                                 <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Grafici multi-timeframe</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> 50+ indicatori tecnici</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Overlay personalizzabili</li>
-                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Export ad alta risoluzione</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Visualizzazione posizioni Long/Short</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Analisi trend storici</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Dashboard personalizzabile</li>
                             </ul>
                         </div>
                     </div>
@@ -450,8 +352,8 @@
     <section class="tech-stack">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold">Tecnologie all'Avanguardia</h2>
-                <p class="lead text-muted">Gli strumenti e le tecnologie che alimentano la nostra piattaforma</p>
+                <h2 class="display-5 fw-bold">Tecnologie Utilizzate</h2>
+                <p class="lead text-muted">Le tecnologie che alimentano la piattaforma</p>
             </div>
             
             <div class="row g-4">
@@ -461,27 +363,27 @@
                             <i class="fab fa-python"></i>
                         </div>
                         <h5>Python & ML</h5>
-                        <p class="text-muted small">Algoritmi di machine learning avanzati per l'analisi predittiva</p>
+                        <p class="text-muted small">Algoritmi di machine learning per l'analisi predittiva</p>
                     </div>
                 </div>
                 
                 <div class="col-lg-3 col-md-6">
                     <div class="tech-card">
                         <div class="tech-icon">
-                            <i class="fas fa-brain"></i>
+                            <i class="fas fa-robot"></i>
                         </div>
-                        <h5>GPT-4 API</h5>
-                        <p class="text-muted small">Intelligenza artificiale conversazionale per analisi semantiche</p>
+                        <h5>Selenium</h5>
+                        <p class="text-muted small">Scraping automatico dei dati CFTC</p>
                     </div>
                 </div>
                 
                 <div class="col-lg-3 col-md-6">
                     <div class="tech-card">
                         <div class="tech-icon">
-                            <i class="fas fa-cloud"></i>
+                            <i class="fas fa-database"></i>
                         </div>
-                        <h5>Cloud Computing</h5>
-                        <p class="text-muted small">Infrastruttura scalabile e affidabile 24/7</p>
+                        <h5>PostgreSQL</h5>
+                        <p class="text-muted small">Database robusto e scalabile</p>
                     </div>
                 </div>
                 
@@ -491,7 +393,7 @@
                             <i class="fas fa-shield-alt"></i>
                         </div>
                         <h5>Security</h5>
-                        <p class="text-muted small">Crittografia bancaria e protezione dati avanzata</p>
+                        <p class="text-muted small">Protezione dati e crittografia avanzata</p>
                     </div>
                 </div>
             </div>
@@ -502,116 +404,46 @@
     <section class="advanced-features">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold">Funzionalità Avanzate</h2>
-                <p class="lead text-muted">Tutto quello che serve per un'analisi professionale</p>
+                <h2 class="display-5 fw-bold">Funzionalità Principali</h2>
+                <p class="lead text-muted">Tutto quello che serve per un'analisi COT professionale</p>
             </div>
             
             <div class="advanced-grid">
                 <div class="advanced-card">
-                    <i class="fas fa-bell"></i>
-                    <h5 class="mt-3">Alert Intelligenti</h5>
-                    <p>Ricevi notifiche personalizzate sui movimenti significativi dei mercati e sui cambiamenti nei sentiment dei trader professionali.</p>
+                    <i class="fas fa-chart-line"></i>
+                    <h5 class="mt-3">Analisi COT Completa</h5>
+                    <p>Visualizzazione dettagliata delle posizioni di trader commerciali e non commerciali con analisi del sentiment di mercato.</p>
                 </div>
                 
                 <div class="advanced-card">
-                    <i class="fas fa-history"></i>
-                    <h5 class="mt-3">Backtesting Avanzato</h5>
-                    <p>Verifica l'accuratezza delle strategie su dati storici con metriche dettagliate di performance e risk management.</p>
+                    <i class="fas fa-brain"></i>
+                    <h5 class="mt-3">Previsioni ML</h5>
+                    <p>Sistema di machine learning proprietario che analizza pattern storici per generare previsioni accurate.</p>
                 </div>
                 
                 <div class="advanced-card">
                     <i class="fas fa-download"></i>
                     <h5 class="mt-3">Export Dati</h5>
-                    <p>Esporta tutti i dati in formato CSV, PDF o Excel per analisi personalizzate o integrazione con altri strumenti.</p>
+                    <p>Esporta tutti i dati in formato CSV o Excel per analisi personalizzate o integrazione con altri strumenti.</p>
                 </div>
                 
                 <div class="advanced-card">
-                    <i class="fas fa-mobile-alt"></i>
-                    <h5 class="mt-3">App Mobile</h5>
-                    <p>Accesso completo da dispositivi mobili con sincronizzazione cloud e notifiche push in tempo reale.</p>
+                    <i class="fas fa-sync-alt"></i>
+                    <h5 class="mt-3">Aggiornamento Automatico</h5>
+                    <p>Sistema di scraping automatico che aggiorna i dati COT ogni martedì direttamente dalla CFTC.</p>
                 </div>
                 
                 <div class="advanced-card">
-                    <i class="fas fa-users"></i>
-                    <h5 class="mt-3">Team Collaboration</h5>
-                    <p>Condividi analisi e strategie con il tuo team, con funzioni di commento e workspace condivisi.</p>
+                    <i class="fas fa-history"></i>
+                    <h5 class="mt-3">Storico Completo</h5>
+                    <p>Accesso a anni di dati COT storici per analisi di lungo periodo e backtesting delle strategie.</p>
                 </div>
                 
                 <div class="advanced-card">
-                    <i class="fas fa-graduation-cap"></i>
-                    <h5 class="mt-3">Educational Content</h5>
-                    <p>Accesso a tutorials, webinar e guide per migliorare le tue competenze nell'analisi COT.</p>
+                    <i class="fas fa-tachometer-alt"></i>
+                    <h5 class="mt-3">Dashboard Intuitiva</h5>
+                    <p>Interfaccia user-friendly con grafici interattivi e visualizzazioni immediate dei dati più importanti.</p>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Integration Section -->
-    <section class="integration-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold">Integrazioni</h2>
-                <p class="lead">Connetti COT Analysis con i tuoi strumenti preferiti</p>
-            </div>
-            
-            <div class="row g-4">
-                <div class="col-lg-3 col-md-6">
-                    <div class="integration-card">
-                        <div class="integration-icon">
-                            <i class="fas fa-code"></i>
-                        </div>
-                        <h5>API RESTful</h5>
-                        <p>Integrazione completa con documentazione dettagliata e SDK per sviluppatori.</p>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <div class="integration-card">
-                        <div class="integration-icon">
-                            <i class="fas fa-chart-area"></i>
-                        </div>
-                        <h5>TradingView</h5>
-                        <p>Widget e indicatori personalizzati direttamente nella tua piattaforma di trading preferita.</p>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <div class="integration-card">
-                        <div class="integration-icon">
-                            <i class="fas fa-envelope"></i>
-                        </div>
-                        <h5>Email & SMS</h5>
-                        <p>Alert via email, SMS e notifiche push per non perdere mai un'opportunità di mercato.</p>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <div class="integration-card">
-                        <div class="integration-icon">
-                            <i class="fas fa-table"></i>
-                        </div>
-                        <h5>Excel & Google Sheets</h5>
-                        <p>Add-in per Excel e Google Sheets per importare dati direttamente nei tuoi fogli di calcolo.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Demo Section -->
-    <section class="demo-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold">Vedi COT Analysis in Azione</h2>
-                <p class="lead text-muted">Una demo interattiva delle nostre funzionalità principali</p>
-            </div>
-            
-            <div class="demo-video">
-                <div class="play-button" onclick="openDemo()">
-                    <i class="fas fa-play"></i>
-                </div>
-                <h4 class="mb-3">Demo Interattiva - 5 minuti</h4>
-                <p class="mb-0">Scopri come utilizzare al meglio la piattaforma COT Analysis per migliorare le tue decisioni di trading</p>
             </div>
         </div>
     </section>
@@ -619,14 +451,14 @@
     <!-- CTA Section -->
     <section class="cta-section">
         <div class="container text-center">
-            <h2 class="display-5 fw-bold mb-4">Pronto a Provare Tutte le Funzionalità?</h2>
-            <p class="lead mb-4">Inizia con il piano Professional e scopri come l'AI può migliorare il tuo trading</p>
+            <h2 class="display-5 fw-bold mb-4">Pronto a Iniziare?</h2>
+            <p class="lead mb-4">Registrati ora e accedi alla piattaforma COT Analysis</p>
             <div class="d-flex gap-3 justify-content-center flex-wrap">
-                <a href="/register?plan=professional" class="btn btn-light btn-lg px-5">
-                    <i class="fas fa-rocket"></i> Prova Gratuita 30 Giorni
+                <a href="/register" class="btn btn-light btn-lg px-5">
+                    <i class="fas fa-rocket"></i> Registrati Ora
                 </a>
                 <a href="/contact" class="btn btn-outline-light btn-lg px-5">
-                    <i class="fas fa-calendar"></i> Prenota Demo Personalizzata
+                    <i class="fas fa-envelope"></i> Contattaci
                 </a>
             </div>
         </div>
@@ -638,14 +470,13 @@
             <div class="row">
                 <div class="col-md-4 mb-4">
                     <h5><i class="fas fa-chart-line"></i> COT Analysis</h5>
-                    <p class="text-muted">La piattaforma professionale per l'analisi dei mercati finanziari con intelligenza artificiale.</p>
+                    <p class="text-muted">La piattaforma integrata per l'analisi dei mercati finanziari con intelligenza artificiale e machine learning.</p>
                 </div>
                 <div class="col-md-2 mb-4">
                     <h6>Prodotto</h6>
                     <ul class="list-unstyled">
                         <li><a href="/features" class="text-muted">Funzionalità</a></li>
                         <li><a href="/pricing" class="text-muted">Prezzi</a></li>
-                        <li><a href="/api" class="text-muted">API</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-4">
@@ -653,7 +484,6 @@
                     <ul class="list-unstyled">
                         <li><a href="/about" class="text-muted">Chi Siamo</a></li>
                         <li><a href="/contact" class="text-muted">Contatti</a></li>
-                        <li><a href="/careers" class="text-muted">Lavora con noi</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-4">
@@ -669,13 +499,12 @@
                     <ul class="list-unstyled">
                         <li><a href="/help" class="text-muted">Centro Aiuto</a></li>
                         <li><a href="/tutorials" class="text-muted">Tutorial</a></li>
-                        <li><a href="/status" class="text-muted">Stato Servizi</a></li>
                     </ul>
                 </div>
             </div>
             <hr class="my-4">
             <div class="text-center text-muted">
-                <small>&copy; 2024 COT Analysis Platform. Tutti i diritti riservati.</small>
+                <small>&copy; 2024-2025 COT Analysis Platform. Tutti i diritti riservati.</small>
             </div>
         </div>
     </footer>
@@ -694,32 +523,18 @@
             });
         });
 
-        // Demo function
-        function openDemo() {
-            // Qui puoi implementare l'apertura di un modal con demo o redirect
-            alert('Demo interattiva in sviluppo! Contattaci per una demo personalizzata.');
-            // window.open('/demo', '_blank'); // Alternativa
-        }
-
         // Intersection Observer per animazioni
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.style.opacity = '1';
                     entry.target.style.transform = 'translateY(0)';
-                    
-                    // Animazione speciale per le card
-                    if (entry.target.classList.contains('tech-card') || 
-                        entry.target.classList.contains('advanced-card')) {
-                        entry.target.style.animationDelay = '0.1s';
-                        entry.target.classList.add('animate-in');
-                    }
                 }
             });
         }, { threshold: 0.1 });
 
         // Applica animazioni agli elementi
-        document.querySelectorAll('.feature-showcase, .tech-card, .advanced-card, .integration-card').forEach(el => {
+        document.querySelectorAll('.feature-showcase, .tech-card, .advanced-card').forEach(el => {
             el.style.opacity = '0';
             el.style.transform = 'translateY(30px)';
             el.style.transition = 'all 0.6s ease';
@@ -735,57 +550,6 @@
                 hero.style.transform = `translateY(${rate}px)`;
             }
         });
-
-        // Counter animation per statistiche (se presenti)
-        function animateCounter(element, target) {
-            let count = 0;
-            const increment = target / 100;
-            const timer = setInterval(() => {
-                count += increment;
-                element.textContent = Math.floor(count);
-                if (count >= target) {
-                    element.textContent = target;
-                    clearInterval(timer);
-                }
-            }, 20);
-        }
-
-        // Highlight features al click
-        document.querySelectorAll('.advanced-card').forEach(card => {
-            card.addEventListener('click', function() {
-                // Rimuovi highlight da altre card
-                document.querySelectorAll('.advanced-card').forEach(c => c.classList.remove('highlighted'));
-                // Aggiungi highlight alla card cliccata
-                this.classList.add('highlighted');
-            });
-        });
-
-        // CSS per highlight
-        const style = document.createElement('style');
-        style.textContent = `
-            .advanced-card.highlighted {
-                border-color: #667eea !important;
-                box-shadow: 0 10px 40px rgba(102, 126, 234, 0.2) !important;
-                transform: translateY(-10px) !important;
-            }
-            
-            .animate-in {
-                animation: slideInUp 0.6s ease forwards;
-            }
-            
-            @keyframes slideInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(30px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>
-                

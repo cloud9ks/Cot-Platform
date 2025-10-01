@@ -114,6 +114,12 @@
             font-weight: normal;
         }
         
+        .plan-price-detail {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        
         .plan-description {
             color: #6b7280;
             margin-bottom: 30px;
@@ -158,17 +164,19 @@
             text-decoration: none;
             display: inline-block;
             text-align: center;
+            border: none;
+            cursor: pointer;
         }
         
         .btn-primary-pricing {
             background: var(--primary-gradient);
-            border: none;
             color: white;
         }
         
         .btn-primary-pricing:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            color: white;
         }
         
         .btn-outline-pricing {
@@ -180,64 +188,6 @@
         .btn-outline-pricing:hover {
             background: #667eea;
             color: white;
-        }
-        
-        .comparison-section {
-            background: white;
-            padding: 80px 0;
-        }
-        
-        .comparison-table {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: var(--card-shadow);
-        }
-        
-        .comparison-table th {
-            background: var(--primary-gradient);
-            color: white;
-            font-weight: 600;
-            padding: 20px;
-            border: none;
-        }
-        
-        .comparison-table td {
-            padding: 15px 20px;
-            border: 1px solid #f1f5f9;
-            text-align: center;
-        }
-        
-        .comparison-table .fa-check {
-            color: #10b981;
-            font-size: 1.2rem;
-        }
-        
-        .comparison-table .fa-times {
-            color: #ef4444;
-            font-size: 1.2rem;
-        }
-        
-        .faq-section {
-            background: #f8f9fa;
-            padding: 80px 0;
-        }
-        
-        .accordion-button {
-            font-weight: 600;
-            color: var(--dark-bg);
-        }
-        
-        .accordion-button:not(.collapsed) {
-            background: var(--primary-gradient);
-            color: white;
-        }
-        
-        .cta-section {
-            background: var(--dark-bg);
-            color: white;
-            padding: 80px 0;
-            text-align: center;
         }
         
         .guarantee-badge {
@@ -254,6 +204,104 @@
         
         .guarantee-badge .fa-shield-alt {
             margin-right: 8px;
+        }
+        
+        /* Checkout Modal */
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .discount-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .discount-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .discount-input-group input {
+            flex: 1;
+        }
+        
+        .discount-applied {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        
+        .price-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .price-row.total {
+            border-bottom: none;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 2px solid #667eea;
+        }
+        
+        .payment-methods {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .payment-method {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .payment-method:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .payment-method.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .payment-method i {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .form-check-label {
+            font-size: 0.9rem;
         }
         
         @media (max-width: 768px) {
@@ -284,16 +332,16 @@
                         <a class="nav-link" href="/">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/features.html">Funzionalità</a>
+                        <a class="nav-link" href="/features">Funzionalità</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/pricing.html">Abbonamenti</a>
+                        <a class="nav-link active" href="/pricing">Abbonamenti</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/about.html">Chi Siamo</a>
+                        <a class="nav-link" href="/about">Chi Siamo</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/contact.html">Contatti</a>
+                        <a class="nav-link" href="/contact">Contatti</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/dashboard">Dashboard</a>
@@ -315,31 +363,32 @@
     <section class="pricing-section">
         <div class="container">
             <div class="row g-4">
-                <!-- Piano Free -->
+                <!-- Piano Starter -->
                 <div class="col-lg-4">
                     <div class="pricing-card">
                         <div class="plan-name">Starter</div>
-                        <div class="plan-price">€0<small>/mese</small></div>
-                        <div class="plan-description">Perfetto per iniziare a esplorare l'analisi COT</div>
+                        <div class="plan-price">€12.99<small>/mese</small></div>
+                        <div class="plan-price-detail">Prova gratuita di 1 mese</div>
+                        <div class="plan-description">Perfetto per iniziare con l'analisi COT</div>
                         
                         <ul class="feature-list">
-                            <li><i class="fas fa-check"></i> 3 asset monitorati</li>
-                            <li><i class="fas fa-check"></i> Dati COT base (settimanali)</li>
+                            <li><i class="fas fa-check"></i> 5 asset monitorati</li>
+                            <li><i class="fas fa-check"></i> Dati COT settimanali</li>
                             <li><i class="fas fa-check"></i> Grafici interattivi</li>
-                            <li><i class="fas fa-check"></i> Analisi semplificata</li>
+                            <li><i class="fas fa-check"></i> Analisi base</li>
+                            <li><i class="fas fa-check"></i> Export dati CSV</li>
                             <li><i class="fas fa-times"></i> Previsioni AI</li>
                             <li><i class="fas fa-times"></i> Alert personalizzati</li>
-                            <li><i class="fas fa-times"></i> Analisi tecnica avanzata</li>
                             <li><i class="fas fa-times"></i> Support prioritario</li>
                         </ul>
                         
-                        <a href="/register.html?plan=starter" class="btn-pricing btn-outline-pricing">
-                            Inizia Gratis
-                        </a>
+                        <button class="btn-pricing btn-outline-pricing" onclick="openCheckout('starter', 12.99, 'Starter')">
+                            Inizia Trial Gratuito
+                        </button>
                         
                         <div class="guarantee-badge">
                             <i class="fas fa-shield-alt"></i>
-                            Sempre gratuito
+                            1 mese gratis poi €12.99/mese
                         </div>
                     </div>
                 </div>
@@ -349,26 +398,27 @@
                     <div class="pricing-card featured">
                         <div class="plan-name">Professional</div>
                         <div class="plan-price">€49<small>/mese</small></div>
+                        <div class="plan-price-detail">&nbsp;</div>
                         <div class="plan-description">La soluzione completa per trader professionali</div>
                         
                         <ul class="feature-list">
                             <li><i class="fas fa-check"></i> Tutti gli asset disponibili</li>
-                            <li><i class="fas fa-check"></i> Dati COT in tempo reale</li>
-                            <li><i class="fas fa-check"></i> Previsioni AI GPT-4</li>
+                            <li><i class="fas fa-check"></i> Dati COT aggiornati</li>
+                            <li><i class="fas fa-check"></i> Previsioni AI avanzate</li>
                             <li><i class="fas fa-check"></i> Alert intelligenti</li>
                             <li><i class="fas fa-check"></i> Analisi tecnica completa</li>
-                            <li><i class="fas fa-check"></i> Backtesting avanzato</li>
-                            <li><i class="fas fa-check"></i> Export dati CSV/PDF</li>
+                            <li><i class="fas fa-check"></i> Backtesting</li>
+                            <li><i class="fas fa-check"></i> Export dati CSV/Excel</li>
                             <li><i class="fas fa-check"></i> Support via email</li>
                         </ul>
                         
-                        <a href="/register.html?plan=professional" class="btn-pricing btn-primary-pricing">
-                            Inizia Prova Gratuita
-                        </a>
+                        <button class="btn-pricing btn-primary-pricing" onclick="openCheckout('professional', 49, 'Professional')">
+                            Acquista Ora
+                        </button>
                         
                         <div class="guarantee-badge">
                             <i class="fas fa-shield-alt"></i>
-                            30 giorni di garanzia
+                            Garanzia soddisfatti o rimborsati
                         </div>
                     </div>
                 </div>
@@ -378,6 +428,7 @@
                     <div class="pricing-card">
                         <div class="plan-name">Enterprise</div>
                         <div class="plan-price">€199<small>/mese</small></div>
+                        <div class="plan-price-detail">&nbsp;</div>
                         <div class="plan-description">Per team e istituzioni finanziarie</div>
                         
                         <ul class="feature-list">
@@ -385,15 +436,15 @@
                             <li><i class="fas fa-check"></i> API dedicata</li>
                             <li><i class="fas fa-check"></i> Utenti multipli (fino a 10)</li>
                             <li><i class="fas fa-check"></i> Dashboard personalizzata</li>
-                            <li><i class="fas fa-check"></i> Integrazione trading platforms</li>
+                            <li><i class="fas fa-check"></i> Analisi custom</li>
                             <li><i class="fas fa-check"></i> Consulenza personalizzata</li>
-                            <li><i class="fas fa-check"></i> Support telefonico 24/7</li>
-                            <li><i class="fas fa-check"></i> White label disponibile</li>
+                            <li><i class="fas fa-check"></i> Support prioritario</li>
+                            <li><i class="fas fa-check"></i> Onboarding dedicato</li>
                         </ul>
                         
-                        <a href="/contact.html?enterprise=true" class="btn-pricing btn-outline-pricing">
-                            Contattaci
-                        </a>
+                        <button class="btn-pricing btn-primary-pricing" onclick="openCheckout('enterprise', 199, 'Enterprise')">
+                            Acquista Ora
+                        </button>
                         
                         <div class="guarantee-badge">
                             <i class="fas fa-shield-alt"></i>
@@ -405,181 +456,153 @@
         </div>
     </section>
 
-    <!-- Comparison Section -->
-    <section class="comparison-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold">Confronto Dettagliato</h2>
-                <p class="lead text-muted">Tutte le funzionalità a confronto</p>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table comparison-table">
-                    <thead>
-                        <tr>
-                            <th style="text-align: left;">Funzionalità</th>
-                            <th>Starter</th>
-                            <th>Professional</th>
-                            <th>Enterprise</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">Asset monitorati</td>
-                            <td>3</td>
-                            <td>Illimitati</td>
-                            <td>Illimitati</td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">Aggiornamenti dati</td>
-                            <td>Settimanali</td>
-                            <td>Real-time</td>
-                            <td>Real-time</td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">Previsioni AI</td>
-                            <td><i class="fas fa-times"></i></td>
-                            <td><i class="fas fa-check"></i></td>
-                            <td><i class="fas fa-check"></i></td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">Alert personalizzati</td>
-                            <td><i class="fas fa-times"></i></td>
-                            <td><i class="fas fa-check"></i></td>
-                            <td><i class="fas fa-check"></i></td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">Analisi tecnica</td>
-                            <td>Base</td>
-                            <td>Avanzata</td>
-                            <td>Avanzata</td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">Backtesting</td>
-                            <td><i class="fas fa-times"></i></td>
-                            <td><i class="fas fa-check"></i></td>
-                            <td><i class="fas fa-check"></i></td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">API Access</td>
-                            <td><i class="fas fa-times"></i></td>
-                            <td>Limitato</td>
-                            <td>Completo</td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">Utenti team</td>
-                            <td>1</td>
-                            <td>1</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: left; font-weight: 600;">Support</td>
-                            <td>Community</td>
-                            <td>Email</td>
-                            <td>24/7 Phone</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
+    <!-- Checkout Modal -->
+    <div class="modal fade" id="checkoutModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Completa il tuo ordine
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="checkoutForm">
+                        <input type="hidden" id="selectedPlan" name="plan">
+                        <input type="hidden" id="selectedPrice" name="price">
+                        
+                        <!-- Piano Selezionato -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-2">Piano Selezionato</h6>
+                            <h4 id="planName" class="text-primary"></h4>
+                        </div>
 
-    <!-- FAQ Section -->
-    <section class="faq-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold">Domande Frequenti</h2>
-                <p class="lead text-muted">Tutto quello che devi sapere sui nostri piani</p>
-            </div>
-            
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="accordion" id="faqAccordion">
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                    Posso cambiare piano in qualsiasi momento?
+                        <!-- Informazioni Utente -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome *</label>
+                                <input type="text" class="form-control" name="firstName" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cognome *</label>
+                                <input type="text" class="form-control" name="lastName" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" name="email" required>
+                            </div>
+                        </div>
+
+                        <!-- Codice Sconto -->
+                        <div class="discount-section">
+                            <h6 class="mb-3">
+                                <i class="fas fa-tag me-2"></i>
+                                Hai un codice promozionale?
+                            </h6>
+                            <div class="discount-input-group">
+                                <input type="text" class="form-control" id="discountCode" placeholder="Inserisci il codice">
+                                <button type="button" class="btn btn-outline-primary" onclick="applyDiscount()">
+                                    Applica
                                 </button>
-                            </h2>
-                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    Assolutamente sì! Puoi fare upgrade o downgrade del tuo piano in qualsiasi momento. Le modifiche saranno attive immediatamente e la fatturazione verrà adeguata proporzionalmente.
+                            </div>
+                            <div id="discountMessage" style="display: none;"></div>
+                        </div>
+
+                        <!-- Riepilogo Prezzo -->
+                        <div class="price-summary">
+                            <h6 class="mb-3">Riepilogo</h6>
+                            <div class="price-row">
+                                <span>Piano</span>
+                                <span id="summaryPlan"></span>
+                            </div>
+                            <div class="price-row">
+                                <span>Prezzo base</span>
+                                <span id="summaryBasePrice"></span>
+                            </div>
+                            <div class="price-row" id="discountRow" style="display: none;">
+                                <span>Sconto</span>
+                                <span id="summaryDiscount" class="text-success"></span>
+                            </div>
+                            <div class="price-row total">
+                                <span>Totale</span>
+                                <span id="summaryTotal"></span>
+                            </div>
+                        </div>
+
+                        <!-- Metodo di Pagamento -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Metodo di Pagamento</h6>
+                            <div class="payment-methods">
+                                <div class="payment-method active" data-method="card" onclick="selectPaymentMethod('card')">
+                                    <i class="fas fa-credit-card"></i>
+                                    <div>Carta</div>
+                                </div>
+                                <div class="payment-method" data-method="paypal" onclick="selectPaymentMethod('paypal')">
+                                    <i class="fab fa-paypal"></i>
+                                    <div>PayPal</div>
+                                </div>
+                                <div class="payment-method" data-method="bank" onclick="selectPaymentMethod('bank')">
+                                    <i class="fas fa-university"></i>
+                                    <div>Bonifico</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="paymentMethod" name="paymentMethod" value="card">
+                        </div>
+
+                        <!-- Dati Carta (mostrato solo se selezionato) -->
+                        <div id="cardDetails" class="mb-4">
+                            <h6 class="mb-3">Dati della Carta</h6>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Il sistema di pagamento Stripe verrà inizializzato al momento del click su "Procedi al Pagamento"
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Numero Carta *</label>
+                                    <input type="text" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Scadenza *</label>
+                                    <input type="text" class="form-control" placeholder="MM/AA" maxlength="5">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">CVV *</label>
+                                    <input type="text" class="form-control" placeholder="123" maxlength="3">
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                    È disponibile una prova gratuita?
-                                </button>
-                            </h2>
-                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    Sì! Il piano Professional include 30 giorni di prova gratuita. Puoi cancellare in qualsiasi momento senza costi. Inoltre, il piano Starter è sempre gratuito.
-                                </div>
-                            </div>
+
+                        <!-- Termini e Condizioni -->
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                Accetto i <a href="/terms" target="_blank">Termini e Condizioni</a> e la <a href="/privacy" target="_blank">Privacy Policy</a> *
+                            </label>
                         </div>
-                        
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                    Quali metodi di pagamento accettate?
-                                </button>
-                            </h2>
-                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    Accettiamo tutte le principali carte di credito (Visa, Mastercard, American Express), PayPal, bonifico bancario e per i piani Enterprise anche pagamenti personalizzati.
-                                </div>
-                            </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="newsletter">
+                            <label class="form-check-label" for="newsletter">
+                                Desidero ricevere aggiornamenti e newsletter
+                            </label>
                         </div>
-                        
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                                    I dati sono sicuri e affidabili?
-                                </button>
-                            </h2>
-                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    I nostri dati provengono direttamente dalla CFTC (Commodity Futures Trading Commission) e sono certificati. Utilizziamo crittografia bancaria e backup multipli per garantire sicurezza e disponibilità.
-                                </div>
-                            </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">
+                                Annulla
+                            </button>
+                            <button type="submit" class="btn btn-primary flex-fill" style="background: var(--primary-gradient); border: none;">
+                                <i class="fas fa-lock me-2"></i>
+                                Procedi al Pagamento
+                            </button>
                         </div>
-                        
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                                    Come funzionano le previsioni AI?
-                                </button>
-                            </h2>
-                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    Le nostre previsioni utilizzano GPT-4 combinato con algoritmi di machine learning proprietari. Analizziamo pattern COT, sentiment di mercato, correlazioni e indicatori tecnici per generare previsioni con un'accuratezza media dell'85%.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="cta-section">
-        <div class="container text-center">
-            <h2 class="display-5 fw-bold mb-4">Pronto a Iniziare?</h2>
-            <p class="lead mb-4">Unisciti a migliaia di trader che già utilizzano le nostre analisi</p>
-            <div class="d-flex gap-3 justify-content-center flex-wrap">
-                <a href="/register.html?plan=professional" class="btn btn-light btn-lg px-5">
-                    <i class="fas fa-rocket"></i> Prova Gratuita 30 Giorni
-                </a>
-                <a href="/contact.html" class="btn btn-outline-light btn-lg px-5">
-                    <i class="fas fa-comments"></i> Parla con un Esperto
-                </a>
-            </div>
-        </div>
-    </section>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-dark text-white py-5">
@@ -587,22 +610,20 @@
             <div class="row">
                 <div class="col-md-4 mb-4">
                     <h5><i class="fas fa-chart-line"></i> COT Analysis</h5>
-                    <p class="text-muted">La piattaforma professionale per l'analisi dei mercati finanziari con intelligenza artificiale.</p>
+                    <p class="text-muted">La piattaforma integrata per l'analisi dei mercati finanziari con intelligenza artificiale e machine learning.</p>
                 </div>
                 <div class="col-md-2 mb-4">
                     <h6>Prodotto</h6>
                     <ul class="list-unstyled">
-                        <li><a href="/features.html" class="text-muted">Funzionalità</a></li>
-                        <li><a href="/pricing.html" class="text-muted">Prezzi</a></li>
-                        <li><a href="/api" class="text-muted">API</a></li>
+                        <li><a href="/features" class="text-muted">Funzionalità</a></li>
+                        <li><a href="/pricing" class="text-muted">Prezzi</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-4">
                     <h6>Azienda</h6>
                     <ul class="list-unstyled">
-                        <li><a href="/about.html" class="text-muted">Chi Siamo</a></li>
-                        <li><a href="/contact.html" class="text-muted">Contatti</a></li>
-                        <li><a href="/careers" class="text-muted">Lavora con noi</a></li>
+                        <li><a href="/about" class="text-muted">Chi Siamo</a></li>
+                        <li><a href="/contact" class="text-muted">Contatti</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-4">
@@ -618,13 +639,12 @@
                     <ul class="list-unstyled">
                         <li><a href="/help" class="text-muted">Centro Aiuto</a></li>
                         <li><a href="/tutorials" class="text-muted">Tutorial</a></li>
-                        <li><a href="/status" class="text-muted">Stato Servizi</a></li>
                     </ul>
                 </div>
             </div>
             <hr class="my-4">
             <div class="text-center text-muted">
-                <small>&copy; 2024 COT Analysis Platform. Tutti i diritti riservati.</small>
+                <small>&copy; 2024-2025 COT Analysis Platform. Tutti i diritti riservati.</small>
             </div>
         </div>
     </footer>
@@ -632,22 +652,147 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth' });
+        let currentPlan = '';
+        let currentPrice = 0;
+        let currentPlanName = '';
+        let discountApplied = false;
+        let discountAmount = 0;
+        
+        function openCheckout(plan, price, planName) {
+            currentPlan = plan;
+            currentPrice = price;
+            currentPlanName = planName;
+            discountApplied = false;
+            discountAmount = 0;
+            
+            document.getElementById('selectedPlan').value = plan;
+            document.getElementById('selectedPrice').value = price;
+            document.getElementById('planName').textContent = `Piano ${planName}`;
+            
+            updateSummary();
+            
+            const modal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+            modal.show();
+        }
+        
+        function updateSummary() {
+            document.getElementById('summaryPlan').textContent = currentPlanName;
+            document.getElementById('summaryBasePrice').textContent = `€${currentPrice.toFixed(2)}`;
+            
+            let finalPrice = currentPrice;
+            
+            if (discountApplied) {
+                finalPrice = currentPrice - discountAmount;
+                document.getElementById('discountRow').style.display = 'flex';
+                document.getElementById('summaryDiscount').textContent = `-€${discountAmount.toFixed(2)}`;
+            } else {
+                document.getElementById('discountRow').style.display = 'none';
+            }
+            
+            document.getElementById('summaryTotal').textContent = `€${finalPrice.toFixed(2)}/mese`;
+        }
+        
+        function applyDiscount() {
+            const code = document.getElementById('discountCode').value.trim().toUpperCase();
+            const messageDiv = document.getElementById('discountMessage');
+            
+            if (!code) {
+                messageDiv.innerHTML = '<div class="alert alert-warning mt-2">Inserisci un codice promozionale</div>';
+                messageDiv.style.display = 'block';
+                return;
+            }
+            
+            // Simula verifica codice (da sostituire con chiamata API al backend)
+            fetch('/api/validate-discount', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: code, plan: currentPlan })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    discountApplied = true;
+                    discountAmount = data.discount;
+                    messageDiv.innerHTML = `<div class="discount-applied"><i class="fas fa-check-circle me-2"></i>Codice "${code}" applicato! Sconto: €${data.discount.toFixed(2)}</div>`;
+                    messageDiv.style.display = 'block';
+                    updateSummary();
+                } else {
+                    messageDiv.innerHTML = '<div class="alert alert-danger mt-2">Codice non valido o scaduto</div>';
+                    messageDiv.style.display = 'block';
                 }
+            })
+            .catch(error => {
+                messageDiv.innerHTML = '<div class="alert alert-danger mt-2">Errore nella verifica del codice. Riprova.</div>';
+                messageDiv.style.display = 'block';
             });
-        });
-
-        // Tracking
-        document.querySelectorAll('[href*="/register"]').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                const plan = new URL(this.href).searchParams.get('plan');
-                console.log(`Piano selezionato: ${plan}`);
+        }
+        
+        function selectPaymentMethod(method) {
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            event.currentTarget.classList.add('active');
+            document.getElementById('paymentMethod').value = method;
+            
+            // Mostra/nascondi dettagli carta
+            if (method === 'card') {
+                document.getElementById('cardDetails').style.display = 'block';
+            } else {
+                document.getElementById('cardDetails').style.display = 'none';
+            }
+        }
+        
+        document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                plan: formData.get('plan'),
+                price: formData.get('price'),
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                email: formData.get('email'),
+                paymentMethod: formData.get('paymentMethod'),
+                discountCode: document.getElementById('discountCode').value,
+                newsletter: document.getElementById('newsletter').checked
+            };
+            
+            // Disabilita il pulsante durante il processo
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Elaborazione...';
+            
+            // Chiamata al backend per creare la sessione di pagamento Stripe
+            fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Redirect alla pagina di pagamento Stripe
+                    if (result.checkoutUrl) {
+                        window.location.href = result.checkoutUrl;
+                    } else {
+                        alert('Pagamento completato con successo!');
+                        window.location.href = '/dashboard';
+                    }
+                } else {
+                    alert('Errore nel processare il pagamento: ' + result.error);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Procedi al Pagamento';
+                }
+            })
+            .catch(error => {
+                alert('Errore di connessione. Riprova.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Procedi al Pagamento';
             });
         });
         

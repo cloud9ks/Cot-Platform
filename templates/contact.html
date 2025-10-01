@@ -60,14 +60,6 @@
             background: #f8f9fa;
         }
         
-        .contact-card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: var(--card-shadow);
-            height: 100%;
-        }
-        
         .contact-form {
             background: white;
             border-radius: 20px;
@@ -156,29 +148,6 @@
             margin: 0 auto 20px;
             font-size: 1.5rem;
             color: white;
-        }
-        
-        .office-section {
-            padding: 80px 0;
-            background: var(--dark-bg);
-            color: white;
-        }
-        
-        .office-card {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            text-align: center;
-            height: 100%;
-        }
-        
-        .office-icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
         
         .faq-quick {
@@ -298,7 +267,7 @@
     <section class="hero-contact">
         <div class="container">
             <h1>Contattaci</h1>
-            <p>Siamo qui per aiutarti. Scrivici per qualsiasi domanda o richiesta di supporto</p>
+            <p>Siamo qui per rispondere alle tue domande sulla piattaforma COT Analysis</p>
         </div>
     </section>
 
@@ -338,21 +307,10 @@
                                 <select class="form-select" id="requestType" required>
                                     <option value="">Seleziona...</option>
                                     <option value="support">Supporto Tecnico</option>
-                                    <option value="sales">Informazioni Commerciali</option>
-                                    <option value="enterprise">Soluzioni Enterprise</option>
+                                    <option value="info">Informazioni sulla Piattaforma</option>
                                     <option value="partnership">Partnership</option>
                                     <option value="feedback">Feedback</option>
                                     <option value="other">Altro</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mt-3">
-                                <label class="form-label">Piano Attuale</label>
-                                <select class="form-select" id="currentPlan">
-                                    <option value="">Non sono ancora un cliente</option>
-                                    <option value="free">Starter (Gratuito)</option>
-                                    <option value="professional">Professional</option>
-                                    <option value="enterprise">Enterprise</option>
                                 </select>
                             </div>
                             
@@ -371,7 +329,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="newsletter">
                                 <label class="form-check-label" for="newsletter">
-                                    Desidero ricevere aggiornamenti e newsletter
+                                    Desidero ricevere aggiornamenti sulla piattaforma
                                 </label>
                             </div>
                             
@@ -395,7 +353,7 @@
                             </div>
                             <div>
                                 <h6>Email</h6>
-                                <p class="mb-0">info@cotanalysis.com<br>support@cotanalysis.com</p>
+                                <p class="mb-0"><a href="mailto:alessandro.baruffi@valiorcapital.com" class="text-white text-decoration-none">alessandro.baruffi@valiorcapital.com</a></p>
                             </div>
                         </div>
                         
@@ -405,7 +363,7 @@
                             </div>
                             <div>
                                 <h6>Telefono</h6>
-                                <p class="mb-0">+39 02 1234 5678<br>Lun-Ven: 9:00-18:00</p>
+                                <p class="mb-0"><a href="tel:+393667179612" class="text-white text-decoration-none">+39 366 717 9612</a></p>
                             </div>
                         </div>
                         
@@ -414,8 +372,8 @@
                                 <i class="fas fa-map-marker-alt"></i>
                             </div>
                             <div>
-                                <h6>Sede Principale</h6>
-                                <p class="mb-0">Via della Tecnologia 123<br>20100 Milano, Italia</p>
+                                <h6>Sede</h6>
+                                <p class="mb-0">Milano City Life<br>20100 Milano, Italia</p>
                             </div>
                         </div>
                         
@@ -424,24 +382,8 @@
                                 <i class="fas fa-clock"></i>
                             </div>
                             <div>
-                                <h6>Orari di Supporto</h6>
-                                <p class="mb-0">Lun-Ven: 9:00-18:00 CET<br>Weekend: Solo emergenze</p>
-                            </div>
-                        </div>
-                        
-                        <hr class="my-4" style="border-color: rgba(255,255,255,0.2);">
-                        
-                        <div class="text-center">
-                            <h6 class="mb-3">Tempo di Risposta</h6>
-                            <div class="row text-center">
-                                <div class="col-6">
-                                    <div class="fs-4 fw-bold">< 2h</div>
-                                    <small class="text-muted">Support Tecnico</small>
-                                </div>
-                                <div class="col-6">
-                                    <div class="fs-4 fw-bold">< 24h</div>
-                                    <small class="text-muted">Info Commerciali</small>
-                                </div>
+                                <h6>Disponibilità</h6>
+                                <p class="mb-0">Lun-Ven: 9:00-18:00 CET<br>Rispondiamo entro 48h</p>
                             </div>
                         </div>
                     </div>
@@ -454,97 +396,41 @@
     <section class="quick-contact">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="display-6 fw-bold">Contatto Rapido</h2>
-                <p class="lead text-muted">Scegli il canale più adatto alle tue esigenze</p>
+                <h2 class="display-6 fw-bold">Risorse Utili</h2>
+                <p class="lead text-muted">Trova rapidamente le informazioni che cerchi</p>
             </div>
             
             <div class="row g-4">
-                <div class="col-lg-3 col-md-6">
-                    <div class="quick-card">
-                        <div class="quick-icon">
-                            <i class="fas fa-comments"></i>
-                        </div>
-                        <h5>Live Chat</h5>
-                        <p class="text-muted small mb-3">Chatta in tempo reale con il nostro team di supporto</p>
-                        <button class="btn btn-outline-primary" onclick="openChat()">Avvia Chat</button>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <div class="quick-card">
-                        <div class="quick-icon">
-                            <i class="fas fa-video"></i>
-                        </div>
-                        <h5>Demo Online</h5>
-                        <p class="text-muted small mb-3">Prenota una demo personalizzata della piattaforma</p>
-                        <a href="/demo" class="btn btn-outline-primary">Prenota Demo</a>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="quick-card">
                         <div class="quick-icon">
                             <i class="fas fa-book"></i>
                         </div>
-                        <h5>Centro Aiuto</h5>
-                        <p class="text-muted small mb-3">Trova risposte alle domande più comuni</p>
-                        <a href="/help" class="btn btn-outline-primary">Vai al Centro Aiuto</a>
+                        <h5>Documentazione</h5>
+                        <p class="text-muted small mb-3">Guide e tutorial per utilizzare al meglio la piattaforma</p>
+                        <a href="/help" class="btn btn-outline-primary">Vai alla Guida</a>
                     </div>
                 </div>
                 
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="quick-card">
                         <div class="quick-icon">
-                            <i class="fas fa-graduation-cap"></i>
+                            <i class="fas fa-question-circle"></i>
                         </div>
-                        <h5>Formazione</h5>
-                        <p class="text-muted small mb-3">Tutorial e corsi per utilizzare al meglio COT Analysis</p>
-                        <a href="/tutorials" class="btn btn-outline-primary">Inizia Ora</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Office Locations -->
-    <section class="office-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-6 fw-bold">Le Nostre Sedi</h2>
-                <p class="lead">Presente in Europa e Nord America</p>
-            </div>
-            
-            <div class="row g-4">
-                <div class="col-lg-4 col-md-6">
-                    <div class="office-card">
-                        <div class="office-icon">
-                            <i class="fas fa-landmark"></i>
-                        </div>
-                        <h5>Milano, Italia</h5>
-                        <p class="mb-2"><strong>Sede Principale</strong></p>
-                        <p class="small text-muted">Via della Tecnologia 123<br>20100 Milano<br>+39 02 1234 5678</p>
+                        <h5>FAQ</h5>
+                        <p class="text-muted small mb-3">Risposte alle domande più frequenti</p>
+                        <a href="#faq" class="btn btn-outline-primary">Vedi FAQ</a>
                     </div>
                 </div>
                 
                 <div class="col-lg-4 col-md-6">
-                    <div class="office-card">
-                        <div class="office-icon">
-                            <i class="fas fa-building"></i>
+                    <div class="quick-card">
+                        <div class="quick-icon">
+                            <i class="fas fa-chart-line"></i>
                         </div>
-                        <h5>Londra, UK</h5>
-                        <p class="mb-2"><strong>Ufficio Europa</strong></p>
-                        <p class="small text-muted">Financial District<br>London EC2M 7PP<br>+44 20 1234 5678</p>
-                    </div>
-                </div>
-                
-                <div class="col-lg-4 col-md-6">
-                    <div class="office-card">
-                        <div class="office-icon">
-                            <i class="fas fa-city"></i>
-                        </div>
-                        <h5>New York, USA</h5>
-                        <p class="mb-2"><strong>Ufficio Americas</strong></p>
-                        <p class="small text-muted">Wall Street District<br>New York, NY 10005<br>+1 212 123 4567</p>
+                        <h5>Dashboard</h5>
+                        <p class="text-muted small mb-3">Accedi alla piattaforma di analisi COT</p>
+                        <a href="/dashboard" class="btn btn-outline-primary">Vai alla Dashboard</a>
                     </div>
                 </div>
             </div>
@@ -552,7 +438,7 @@
     </section>
 
     <!-- Quick FAQ -->
-    <section class="faq-quick">
+    <section class="faq-quick" id="faq">
         <div class="container">
             <div class="text-center mb-5">
                 <h2 class="display-6 fw-bold">Domande Frequenti</h2>
@@ -565,12 +451,12 @@
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                    Come posso iniziare a utilizzare COT Analysis?
+                                    Come funziona la piattaforma COT Analysis?
                                 </button>
                             </h2>
                             <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body">
-                                    Puoi iniziare gratuitamente con il piano Starter o provare il piano Professional per 30 giorni. Registrati sul sito e accedi subito alla dashboard con dati COT di base.
+                                    La piattaforma scarica automaticamente i dati COT dalla CFTC ogni martedì, li elabora attraverso algoritmi di machine learning e genera analisi e previsioni sui principali asset finanziari. Puoi accedere ai dati attraverso una dashboard intuitiva con grafici interattivi.
                                 </div>
                             </div>
                         </div>
@@ -578,12 +464,12 @@
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                    Quanto sono accurate le previsioni AI?
+                                    Quando vengono aggiornati i dati?
                                 </button>
                             </h2>
                             <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body">
-                                    Le nostre previsioni hanno un'accuratezza media dell'85% su timeframe settimanali. L'accuratezza varia in base all'asset e alle condizioni di mercato. Tutti i risultati sono tracciabili e verificabili.
+                                    I dati COT vengono pubblicati dalla CFTC ogni venerdì e aggiornati automaticamente nella nostra piattaforma ogni martedì alle 21:00 CET. Il sistema esegue lo scraping, l'elaborazione e l'analisi in modo completamente automatico.
                                 </div>
                             </div>
                         </div>
@@ -591,12 +477,12 @@
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                    Posso integrare COT Analysis con la mia piattaforma di trading?
+                                    Posso esportare i dati per le mie analisi?
                                 </button>
                             </h2>
                             <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body">
-                                    Sì! Offriamo API complete e widget per TradingView, MetaTrader e altre piattaforme popolari. I piani Professional ed Enterprise includono accesso API completo.
+                                    Sì, puoi esportare tutti i dati in formato CSV o Excel per analisi personalizzate. I dati includono storico completo delle posizioni COT e le previsioni generate dal sistema.
                                 </div>
                             </div>
                         </div>
@@ -604,12 +490,12 @@
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                                    Che tipo di supporto è disponibile?
+                                    Come posso iniziare a utilizzare la piattaforma?
                                 </button>
                             </h2>
                             <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body">
-                                    Offriamo supporto via email per tutti i piani, con chat live per Professional e supporto telefonico 24/7 per Enterprise. Include anche documentazione completa, tutorial video e webinar formativi.
+                                    Registrati tramite il form sulla homepage o contattaci per maggiori informazioni. Una volta registrato, avrai accesso immediato alla dashboard con tutti i dati COT e le analisi disponibili.
                                 </div>
                             </div>
                         </div>
@@ -623,23 +509,17 @@
     <section class="social-section">
         <div class="container">
             <h3 class="mb-3">Seguici sui Social</h3>
-            <p class="text-muted">Resta aggiornato su news, analisi di mercato e aggiornamenti della piattaforma</p>
+            <p class="text-muted">Resta aggiornato su analisi di mercato e aggiornamenti della piattaforma</p>
             
             <div class="social-links">
-                <a href="#" class="social-link">
+                <a href="#" class="social-link" title="LinkedIn">
                     <i class="fab fa-linkedin-in"></i>
                 </a>
-                <a href="#" class="social-link">
+                <a href="#" class="social-link" title="Twitter">
                     <i class="fab fa-twitter"></i>
                 </a>
-                <a href="#" class="social-link">
-                    <i class="fab fa-youtube"></i>
-                </a>
-                <a href="#" class="social-link">
+                <a href="#" class="social-link" title="Telegram">
                     <i class="fab fa-telegram-plane"></i>
-                </a>
-                <a href="#" class="social-link">
-                    <i class="fab fa-discord"></i>
                 </a>
             </div>
         </div>
@@ -651,14 +531,13 @@
             <div class="row">
                 <div class="col-md-4 mb-4">
                     <h5><i class="fas fa-chart-line"></i> COT Analysis</h5>
-                    <p class="text-muted">La piattaforma professionale per l'analisi dei mercati finanziari con intelligenza artificiale.</p>
+                    <p class="text-muted">La piattaforma integrata per l'analisi dei mercati finanziari con intelligenza artificiale e machine learning.</p>
                 </div>
                 <div class="col-md-2 mb-4">
                     <h6>Prodotto</h6>
                     <ul class="list-unstyled">
                         <li><a href="/features" class="text-muted">Funzionalità</a></li>
                         <li><a href="/pricing" class="text-muted">Prezzi</a></li>
-                        <li><a href="/api" class="text-muted">API</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-4">
@@ -666,7 +545,6 @@
                     <ul class="list-unstyled">
                         <li><a href="/about" class="text-muted">Chi Siamo</a></li>
                         <li><a href="/contact" class="text-muted">Contatti</a></li>
-                        <li><a href="/careers" class="text-muted">Lavora con noi</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-4">
@@ -682,13 +560,12 @@
                     <ul class="list-unstyled">
                         <li><a href="/help" class="text-muted">Centro Aiuto</a></li>
                         <li><a href="/tutorials" class="text-muted">Tutorial</a></li>
-                        <li><a href="/status" class="text-muted">Stato Servizi</a></li>
                     </ul>
                 </div>
             </div>
             <hr class="my-4">
             <div class="text-center text-muted">
-                <small>&copy; 2024 COT Analysis Platform. Tutti i diritti riservati.</small>
+                <small>&copy; 2024-2025 COT Analysis Platform. Tutti i diritti riservati.</small>
             </div>
         </div>
     </footer>
@@ -707,7 +584,6 @@
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
                 requestType: document.getElementById('requestType').value,
-                currentPlan: document.getElementById('currentPlan').value,
                 message: document.getElementById('message').value,
                 privacy: document.getElementById('privacy').checked,
                 newsletter: document.getElementById('newsletter').checked
@@ -734,10 +610,7 @@
             
             // Simulate API call
             setTimeout(() => {
-                // Here you would normally send data to your backend
-                console.log('Form data:', formData);
-                
-                showAlert('Messaggio inviato con successo! Ti risponderemo entro 24 ore.', 'success');
+                showAlert('Messaggio inviato con successo! Ti risponderemo entro 48 ore.', 'success');
                 document.getElementById('contactForm').reset();
                 
                 submitBtn.disabled = false;
@@ -756,17 +629,9 @@
                 </div>
             `;
             
-            // Auto-hide after 5 seconds
             setTimeout(() => {
                 alertContainer.innerHTML = '';
             }, 5000);
-        }
-        
-        // Chat function
-        function openChat() {
-            // Simulate opening chat widget
-            alert('Chat dal vivo in arrivo! Per ora scrivici via email a support@cotanalysis.com');
-            // Here you would integrate with your chat system (Intercom, Zendesk, etc.)
         }
         
         // Smooth scroll
@@ -782,28 +647,15 @@
         
         // Form field animations
         document.querySelectorAll('.form-control, .form-select').forEach(field => {
-            field.addEventListener('focus', function() {
-                this.closest('.form-group, div').classList.add('focused');
-            });
-            
             field.addEventListener('blur', function() {
-                this.closest('.form-group, div').classList.remove('focused');
+                if (!this.value.trim() && this.hasAttribute('required')) {
+                    this.classList.add('is-invalid');
+                } else if (this.value.trim()) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                }
             });
         });
-        
-        // Auto-select request type from URL params
-        const urlParams = new URLSearchParams(window.location.search);
-        const requestType = urlParams.get('type');
-        const enterprise = urlParams.get('enterprise');
-        
-        if (requestType) {
-            document.getElementById('requestType').value = requestType;
-        }
-        
-        if (enterprise === 'true') {
-            document.getElementById('requestType').value = 'enterprise';
-            document.getElementById('message').value = 'Sono interessato alle soluzioni Enterprise. Potreste contattarmi per una demo personalizzata?';
-        }
         
         // Intersection Observer for animations
         const observer = new IntersectionObserver((entries) => {
@@ -815,58 +667,12 @@
             });
         });
         
-        // Animate cards on scroll
-        document.querySelectorAll('.quick-card, .office-card, .contact-form').forEach(el => {
+        document.querySelectorAll('.quick-card, .contact-form').forEach(el => {
             el.style.opacity = '0';
             el.style.transform = 'translateY(30px)';
             el.style.transition = 'all 0.6s ease';
             observer.observe(el);
         });
-        
-        // Real-time form validation feedback
-        const requiredFields = ['firstName', 'lastName', 'email', 'requestType', 'message'];
-        
-        requiredFields.forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                field.addEventListener('blur', function() {
-                    if (!this.value.trim()) {
-                        this.classList.add('is-invalid');
-                    } else {
-                        this.classList.remove('is-invalid');
-                        this.classList.add('is-valid');
-                    }
-                });
-                
-                field.addEventListener('input', function() {
-                    if (this.value.trim()) {
-                        this.classList.remove('is-invalid');
-                        this.classList.add('is-valid');
-                    }
-                });
-            }
-        });
-        
-        // Email field specific validation
-        document.getElementById('email').addEventListener('blur', function() {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (this.value && !emailRegex.test(this.value)) {
-                this.classList.add('is-invalid');
-                this.classList.remove('is-valid');
-            }
-        });
     </script>
-    
-    <style>
-        .form-control.is-valid, .form-select.is-valid {
-            border-color: #10b981;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310b981' d='m2.3 6.73.5.55 3.4-3.85-.9-.9-2.5 2.8L1.5 4.1l-.9.9 1.7 1.73z'/%3e%3c/svg%3e");
-        }
-        
-        .form-control.is-invalid, .form-select.is-invalid {
-            border-color: #ef4444;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 4.6.4.4.4-.4 1.4 1.4-.4.4.4.4-1.4 1.4-.4-.4-.4.4-1.4-1.4.4-.4-.4-.4 1.4-1.4Z'/%3e%3c/svg%3e");
-        }
-    </style>
 </body>
 </html>
