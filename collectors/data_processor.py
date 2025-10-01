@@ -1,519 +1,432 @@
+"""
+COT Scraper Module - VERSIONE DOCKER OTTIMIZZATA FIXED
+Compatibile sia con ambiente locale che con Docker/Render
+"""
 
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.os_manager import ChromeType
+import time
+import re
+from datetime import datetime
 import logging
-import json
 import os
 import sys
+import platform
+import tempfile
+import uuid
 
-# Setup path per imports
+# Aggiungi path per import del config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import current_config as config
+
+# Importa config se disponibile, altrimenti usa defaults
+try:
+    from config import current_config as config
+except:
+    class config:
+        SELENIUM_HEADLESS = True
+        SELENIUM_WAIT_TIME = 10
+        SELENIUM_TIMEOUT = 30
+        SENTIMENT_THRESHOLD_BULLISH = 20
+        SENTIMENT_THRESHOLD_BEARISH = -20
+        CSV_OUTPUT_FOLDER = 'data/csv_output'
+        COT_SYMBOLS = {
+            'GOLD': {
+                'url': 'https://www.tradingster.com/cot/legacy-futures/088691',
+                'name': 'Gold',
+                'code': '088691',
+                'category': 'commodities'
+            },
+            'USD': {
+                'url': 'https://www.tradingster.com/cot/legacy-futures/098662',
+                'name': 'US Dollar Index',
+                'code': '098662',
+                'category': 'currencies'
+            }
+        }
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class COTDataProcessor:
-    """Classe per l'elaborazione avanzata dei dati COT"""
+# Rileva se siamo in ambiente Docker
+IS_DOCKER = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_ENV') == 'true'
+
+class COTScraper:
+    """Classe principale per lo scraping dei dati COT - ottimizzata per Docker e locale"""
     
-    def __init__(self):
-        """Inizializza il processor"""
-        self.data = None
-        self.processed_data = None
-        self.indicators = {}
-        
-    def load_data(self, data):
+    def __init__(self, headless=None):
         """
-        Carica i dati da elaborare
+        Inizializza il scraper
         
         Args:
-            data: Può essere dict, DataFrame, o path a file CSV
+            headless: Se True, esegue Chrome in modalità headless
         """
+        self.headless = headless if headless is not None else config.SELENIUM_HEADLESS
+        self.driver = None
+        self.wait_time = config.SELENIUM_WAIT_TIME
+        self.timeout = config.SELENIUM_TIMEOUT
+        self.temp_dir = None  # Per cleanup
+        
+    def setup_driver(self):
+        """Configura il driver Chrome con le opzioni ottimali"""
         try:
-            if isinstance(data, str):
-                # Carica da file
-                if data.endswith('.csv'):
-                    self.data = pd.read_csv(data)
-                elif data.endswith('.json'):
-                    with open(data, 'r') as f:
-                        self.data = pd.DataFrame(json.load(f))
-            elif isinstance(data, dict):
-                # Converti dict in DataFrame
-                if all(isinstance(v, dict) for v in data.values()):
-                    self.data = pd.DataFrame.from_dict(data, orient='index')
-                else:
-                    self.data = pd.DataFrame([data])
-            elif isinstance(data, pd.DataFrame):
-                self.data = data
-            else:
-                raise ValueError("Formato dati non supportato")
+            chrome_options = Options()
             
-            # Converti date column se presente
-            if 'date' in self.data.columns:
-                self.data['date'] = pd.to_datetime(self.data['date'])
+            # FIX CRITICO: Crea directory temporanea unica per ogni istanza
+            self.temp_dir = os.path.join(tempfile.gettempdir(), f'chrome_{uuid.uuid4()}')
+            os.makedirs(self.temp_dir, exist_ok=True)
             
-            logger.info(f"✓ Dati caricati: {len(self.data)} righe")
+            # OPZIONI CRITICHE PER DOCKER
+            chrome_options.add_argument("--no-sandbox")  # ESSENZIALE per Docker
+            chrome_options.add_argument("--disable-dev-shm-usage")  # ESSENZIALE per Docker
+            chrome_options.add_argument("--disable-gpu")
+            
+            # FIX: User data directory unica
+            chrome_options.add_argument(f"--user-data-dir={self.temp_dir}")
+            
+            # Previeni altri conflitti
+            chrome_options.add_argument("--no-first-run")
+            chrome_options.add_argument("--no-default-browser-check")
+            chrome_options.add_argument("--disable-background-networking")
+            chrome_options.add_argument("--disable-background-timer-throttling")
+            chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+            chrome_options.add_argument("--disable-breakpad")
+            chrome_options.add_argument("--disable-client-side-phishing-detection")
+            chrome_options.add_argument("--disable-component-update")
+            chrome_options.add_argument("--disable-default-apps")
+            chrome_options.add_argument("--disable-hang-monitor")
+            chrome_options.add_argument("--disable-popup-blocking")
+            chrome_options.add_argument("--disable-prompt-on-repost")
+            chrome_options.add_argument("--disable-sync")
+            chrome_options.add_argument("--disable-translate")
+            chrome_options.add_argument("--metrics-recording-only")
+            chrome_options.add_argument("--no-first-run")
+            chrome_options.add_argument("--safebrowsing-disable-auto-update")
+            chrome_options.add_argument("--remote-debugging-port=0")  # Porta random
+            
+            # Modalità headless
+            if self.headless:
+                chrome_options.add_argument("--headless=new")
+            
+            # Ottimizzazioni performance
+            chrome_options.add_argument("--disable-software-rasterizer")
+            chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+            chrome_options.add_argument("--window-size=1920,1080")
+            chrome_options.add_argument("--disable-extensions")
+            
+            # User agent realistico
+            chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            
+            # Disabilita notifiche
+            prefs = {
+                "profile.default_content_setting_values.notifications": 2,
+                "profile.default_content_settings.popups": 0,
+                "download.prompt_for_download": False,
+                "download.directory_upgrade": True,
+                "safebrowsing.enabled": False
+            }
+            chrome_options.add_experimental_option("prefs", prefs)
+            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
+            chrome_options.add_experimental_option('useAutomationExtension', False)
+            
+            # STRATEGIA DI FALLBACK MULTIPLA
+            driver_initialized = False
+            
+            # Tentativo 1: Chrome di sistema (funziona in Docker se Chrome è installato)
+            if IS_DOCKER or platform.system() == 'Linux':
+                try:
+                    logger.info("Tentativo con Chrome di sistema (Docker/Linux)...")
+                    self.driver = webdriver.Chrome(options=chrome_options)
+                    driver_initialized = True
+                    logger.info("✓ Chrome driver configurato (sistema)")
+                except Exception as e:
+                    logger.warning(f"Chrome di sistema fallito: {str(e)}")
+            
+            # Tentativo 2: WebDriver Manager (per ambiente locale)
+            if not driver_initialized:
+                try:
+                    logger.info("Tentativo con WebDriver Manager...")
+                    driver_path = ChromeDriverManager().install()
+                    
+                    if not os.path.exists(driver_path):
+                        raise Exception("Driver non trovato nel path specificato")
+                    
+                    service = Service(driver_path)
+                    self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                    driver_initialized = True
+                    logger.info("✓ Chrome driver configurato (WebDriver Manager)")
+                except Exception as e:
+                    logger.warning(f"WebDriver Manager fallito: {str(e)}")
+            
+            # Tentativo 3: Driver locale (chromedriver.exe nella cartella)
+            if not driver_initialized:
+                try:
+                    logger.info("Tentativo con driver locale...")
+                    if os.path.exists("chromedriver.exe"):
+                        service = Service("chromedriver.exe")
+                        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                        driver_initialized = True
+                        logger.info("✓ Chrome driver configurato (locale)")
+                except Exception as e:
+                    logger.warning(f"Driver locale fallito: {str(e)}")
+            
+            if not driver_initialized:
+                raise Exception(
+                    "ChromeDriver non disponibile. "
+                    "In Docker: assicurati che Chrome sia installato. "
+                    "In locale: scarica ChromeDriver da https://chromedriver.chromium.org/"
+                )
+            
+            # Configura timeout implicito
+            self.driver.implicitly_wait(10)
+            
+            logger.info(f"Chrome driver pronto con temp dir: {self.temp_dir}")
             return True
             
         except Exception as e:
-            logger.error(f"Errore caricamento dati: {str(e)}")
+            logger.error(f"✗ Errore configurazione driver: {str(e)}")
+            if IS_DOCKER:
+                logger.error("SOLUZIONE DOCKER: Assicurati che il Dockerfile installi Chrome correttamente")
+            else:
+                logger.error("SOLUZIONE LOCALE: Scarica ChromeDriver da https://chromedriver.chromium.org/")
             return False
     
-    def calculate_technical_indicators(self):
-        """Calcola indicatori tecnici sui dati COT"""
-        if self.data is None:
-            logger.error("Nessun dato caricato")
-            return None
-        
-        try:
-            df = self.data.copy()
-            
-            # Moving Averages
-            if 'net_position' in df.columns:
-                df['net_position_ma5'] = df['net_position'].rolling(window=5, min_periods=1).mean()
-                df['net_position_ma10'] = df['net_position'].rolling(window=10, min_periods=1).mean()
-                df['net_position_ma20'] = df['net_position'].rolling(window=20, min_periods=1).mean()
-            
-            # Sentiment Moving Averages
-            if 'sentiment_score' in df.columns:
-                df['sentiment_ma5'] = df['sentiment_score'].rolling(window=5, min_periods=1).mean()
-                df['sentiment_ma10'] = df['sentiment_score'].rolling(window=10, min_periods=1).mean()
-            
-            # Rate of Change (ROC)
-            if 'net_position' in df.columns:
-                df['net_position_roc'] = df['net_position'].pct_change(periods=1) * 100
-                df['net_position_roc5'] = df['net_position'].pct_change(periods=5) * 100
-            
-            # Volatility
-            if 'sentiment_score' in df.columns:
-                df['sentiment_volatility'] = df['sentiment_score'].rolling(window=10, min_periods=1).std()
-            
-            # Z-Score (normalized positions)
-            if 'net_position' in df.columns:
-                rolling_mean = df['net_position'].rolling(window=20, min_periods=1).mean()
-                rolling_std = df['net_position'].rolling(window=20, min_periods=1).std()
-                df['net_position_zscore'] = (df['net_position'] - rolling_mean) / (rolling_std + 1e-10)
-            
-            # Extreme positions detection
-            if 'net_position' in df.columns:
-                df['extreme_long'] = df['net_position'] > df['net_position'].quantile(0.9)
-                df['extreme_short'] = df['net_position'] < df['net_position'].quantile(0.1)
-            
-            # Commercial vs Non-Commercial Divergence
-            if all(col in df.columns for col in ['non_commercial_long', 'non_commercial_short', 
-                                                   'commercial_long', 'commercial_short']):
-                df['nc_net'] = df['non_commercial_long'] - df['non_commercial_short']
-                df['c_net'] = df['commercial_long'] - df['commercial_short']
-                df['divergence'] = df['nc_net'] + df['c_net']  # Commercials usually opposite to NC
-                df['divergence_signal'] = np.where(df['divergence'] > 0, 'ALIGNED', 'DIVERGENT')
-            
-            # Momentum indicators
-            if 'net_position' in df.columns and len(df) > 1:
-                df['momentum'] = df['net_position'].diff()
-                df['momentum_ma5'] = df['momentum'].rolling(window=5, min_periods=1).mean()
-                df['momentum_signal'] = np.where(df['momentum'] > 0, 'INCREASING', 'DECREASING')
-            
-            # Open Interest changes (if available)
-            if 'open_interest' in df.columns:
-                df['oi_change'] = df['open_interest'].pct_change() * 100
-                df['oi_ma5'] = df['open_interest'].rolling(window=5, min_periods=1).mean()
-            
-            self.processed_data = df
-            
-            # Salva indicatori principali
-            self._calculate_summary_indicators()
-            
-            logger.info("✓ Indicatori tecnici calcolati")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Errore calcolo indicatori: {str(e)}")
-            return None
-    
-    def _calculate_summary_indicators(self):
-        """Calcola indicatori riassuntivi"""
-        if self.processed_data is None:
-            return
-        
-        df = self.processed_data
-        
-        # Ultimo valore disponibile
-        latest = df.iloc[-1] if len(df) > 0 else None
-        
-        if latest is not None:
-            self.indicators = {
-                'current_net_position': latest.get('net_position', 0),
-                'current_sentiment': latest.get('sentiment_score', 0),
-                'sentiment_direction': latest.get('sentiment_direction', 'NEUTRAL'),
-                'momentum': latest.get('momentum', 0),
-                'momentum_signal': latest.get('momentum_signal', 'STABLE'),
-                'extreme_position': 'LONG' if latest.get('extreme_long', False) else 
-                                  'SHORT' if latest.get('extreme_short', False) else 'NORMAL',
-                'divergence_signal': latest.get('divergence_signal', 'UNKNOWN'),
-                'volatility': latest.get('sentiment_volatility', 0),
-                'z_score': latest.get('net_position_zscore', 0)
-            }
-            
-            # Aggiungi trend
-            if len(df) > 5:
-                recent_trend = df['net_position'].tail(5).mean() if 'net_position' in df.columns else 0
-                older_trend = df['net_position'].tail(10).head(5).mean() if 'net_position' in df.columns else 0
-                self.indicators['trend'] = 'UP' if recent_trend > older_trend else 'DOWN'
-            else:
-                self.indicators['trend'] = 'INSUFFICIENT_DATA'
-    
-    def analyze_correlations(self, other_symbols_data):
+    def scrape_cot_data(self, symbol):
         """
-        Analizza correlazioni con altri simboli
+        Scrape dei dati COT per un simbolo specifico
         
         Args:
-            other_symbols_data: Dict con dati di altri simboli
+            symbol: Simbolo da analizzare (es. 'GOLD', 'USD')
             
         Returns:
-            DataFrame con matrice di correlazione
+            dict: Dati COT estratti o None in caso di errore
         """
+        if symbol not in config.COT_SYMBOLS:
+            logger.error(f"Simbolo {symbol} non trovato nella configurazione")
+            return None
+        
         try:
-            if not other_symbols_data:
+            # Setup driver se necessario
+            if not self.driver:
+                if not self.setup_driver():
+                    return None
+            
+            # Ottieni URL per il simbolo
+            url = config.COT_SYMBOLS[symbol]['url']
+            logger.info(f"📊 Scraping {symbol} da: {url}")
+            
+            # Naviga alla pagina
+            self.driver.get(url)
+            
+            # Attendi caricamento tabella
+            try:
+                WebDriverWait(self.driver, self.timeout).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, 'table-striped'))
+                )
+            except:
+                logger.warning("Timeout attesa tabella, procedo comunque...")
+            
+            time.sleep(self.wait_time)
+            
+            # Estrai data del report
+            report_date = self._extract_report_date()
+            
+            # Estrai dati dalla tabella
+            positions_data = self._extract_positions_data()
+            
+            if not positions_data:
+                logger.error(f"Impossibile estrarre dati per {symbol}")
                 return None
             
-            # Prepara DataFrame per correlazioni
-            correlation_data = {}
+            # Aggiungi metadati
+            positions_data['symbol'] = symbol
+            positions_data['date'] = report_date
+            positions_data['name'] = config.COT_SYMBOLS[symbol]['name']
+            positions_data['category'] = config.COT_SYMBOLS[symbol].get('category', 'unknown')
             
-            # Aggiungi dati correnti
-            if self.data is not None and 'symbol' in self.data.columns:
-                symbol = self.data['symbol'].iloc[0] if len(self.data) > 0 else 'CURRENT'
-                if 'sentiment_score' in self.data.columns:
-                    correlation_data[symbol] = self.data['sentiment_score'].values
+            # Calcola net position
+            positions_data['net_position'] = (
+                positions_data['non_commercial_long'] - 
+                positions_data['non_commercial_short']
+            )
             
-            # Aggiungi altri simboli
-            for symbol, data in other_symbols_data.items():
-                if isinstance(data, pd.DataFrame) and 'sentiment_score' in data.columns:
-                    correlation_data[symbol] = data['sentiment_score'].values
-                elif isinstance(data, dict) and 'sentiment_score' in data:
-                    correlation_data[symbol] = [data['sentiment_score']]
+            # Calcola sentiment score
+            total_long = positions_data['non_commercial_long'] + positions_data['commercial_long']
+            total_short = positions_data['non_commercial_short'] + positions_data['commercial_short']
             
-            # Calcola correlazioni
-            if len(correlation_data) > 1:
-                # Allinea lunghezze
-                min_len = min(len(v) for v in correlation_data.values())
-                for key in correlation_data:
-                    correlation_data[key] = correlation_data[key][:min_len]
-                
-                # Crea DataFrame e calcola correlazioni
-                corr_df = pd.DataFrame(correlation_data)
-                correlation_matrix = corr_df.corr()
-                
-                logger.info("✓ Correlazioni calcolate")
-                return correlation_matrix
-            
-            return None
-            
-        except Exception as e:
-            logger.error(f"Errore calcolo correlazioni: {str(e)}")
-            return None
-    
-    def detect_patterns(self):
-        """Rileva pattern significativi nei dati COT"""
-        if self.processed_data is None:
-            logger.error("Nessun dato processato disponibile")
-            return None
-        
-        patterns = {
-            'reversals': [],
-            'extremes': [],
-            'divergences': [],
-            'trends': []
-        }
-        
-        try:
-            df = self.processed_data
-            
-            # Pattern 1: Reversal Detection
-            if 'net_position' in df.columns and len(df) > 10:
-                # Cerca inversioni significative
-                for i in range(10, len(df)):
-                    window = df.iloc[i-10:i]
-                    current = df.iloc[i]
-                    
-                    # Inversione da estremo positivo
-                    if window['net_position'].max() == current['net_position'] and \
-                       current['net_position'] > df['net_position'].quantile(0.8):
-                        patterns['reversals'].append({
-                            'type': 'TOP_REVERSAL',
-                            'date': current.get('date', i),
-                            'value': current['net_position'],
-                            'confidence': 'HIGH' if current.get('extreme_long', False) else 'MEDIUM'
-                        })
-                    
-                    # Inversione da estremo negativo
-                    if window['net_position'].min() == current['net_position'] and \
-                       current['net_position'] < df['net_position'].quantile(0.2):
-                        patterns['reversals'].append({
-                            'type': 'BOTTOM_REVERSAL',
-                            'date': current.get('date', i),
-                            'value': current['net_position'],
-                            'confidence': 'HIGH' if current.get('extreme_short', False) else 'MEDIUM'
-                        })
-            
-            # Pattern 2: Extreme Positions
-            if 'net_position_zscore' in df.columns:
-                extremes = df[df['net_position_zscore'].abs() > 2]
-                for _, row in extremes.iterrows():
-                    patterns['extremes'].append({
-                        'type': 'EXTREME_LONG' if row['net_position_zscore'] > 0 else 'EXTREME_SHORT',
-                        'date': row.get('date', None),
-                        'z_score': row['net_position_zscore'],
-                        'value': row.get('net_position', 0)
-                    })
-            
-            # Pattern 3: Commercial/Non-Commercial Divergence
-            if 'divergence_signal' in df.columns:
-                divergences = df[df['divergence_signal'] == 'DIVERGENT']
-                if len(divergences) > 0:
-                    recent_divergences = divergences.tail(5)
-                    for _, row in recent_divergences.iterrows():
-                        patterns['divergences'].append({
-                            'date': row.get('date', None),
-                            'nc_net': row.get('nc_net', 0),
-                            'c_net': row.get('c_net', 0),
-                            'strength': abs(row.get('divergence', 0))
-                        })
-            
-            # Pattern 4: Trend Identification
-            if 'net_position' in df.columns and len(df) > 20:
-                # Trend a breve termine (5 periodi)
-                short_trend = df['net_position'].tail(5).mean() - df['net_position'].tail(10).head(5).mean()
-                
-                # Trend a medio termine (20 periodi)
-                if len(df) > 20:
-                    medium_trend = df['net_position'].tail(10).mean() - df['net_position'].tail(20).head(10).mean()
-                else:
-                    medium_trend = 0
-                
-                patterns['trends'] = {
-                    'short_term': 'BULLISH' if short_trend > 0 else 'BEARISH',
-                    'short_term_strength': abs(short_trend),
-                    'medium_term': 'BULLISH' if medium_trend > 0 else 'BEARISH',
-                    'medium_term_strength': abs(medium_trend),
-                    'alignment': 'ALIGNED' if (short_trend > 0) == (medium_trend > 0) else 'DIVERGENT'
-                }
-            
-            logger.info(f"✓ Pattern rilevati: {len(patterns['reversals'])} inversioni, "
-                       f"{len(patterns['extremes'])} estremi, {len(patterns['divergences'])} divergenze")
-            
-            return patterns
-            
-        except Exception as e:
-            logger.error(f"Errore rilevamento pattern: {str(e)}")
-            return patterns
-    
-    def generate_signals(self):
-        """
-        Genera segnali di trading basati sui dati processati
-        
-        Returns:
-            dict: Segnali di trading con confidenza
-        """
-        if self.processed_data is None or len(self.processed_data) == 0:
-            return {'signal': 'NO_DATA', 'confidence': 0}
-        
-        try:
-            latest = self.processed_data.iloc[-1]
-            signals = []
-            weights = []
-            
-            # Segnale 1: Sentiment Direction (peso 30%)
-            if 'sentiment_direction' in latest:
-                if latest['sentiment_direction'] == 'BULLISH':
-                    signals.append(1)
-                    weights.append(0.3)
-                elif latest['sentiment_direction'] == 'BEARISH':
-                    signals.append(-1)
-                    weights.append(0.3)
-                else:
-                    signals.append(0)
-                    weights.append(0.3)
-            
-            # Segnale 2: Momentum (peso 25%)
-            if 'momentum' in latest and latest['momentum'] != 0:
-                if latest['momentum'] > 0:
-                    signals.append(1)
-                    weights.append(0.25)
-                else:
-                    signals.append(-1)
-                    weights.append(0.25)
-            
-            # Segnale 3: Z-Score (peso 20%)
-            if 'net_position_zscore' in latest:
-                z_score = latest['net_position_zscore']
-                if z_score > 1.5:
-                    signals.append(1)
-                    weights.append(0.2)
-                elif z_score < -1.5:
-                    signals.append(-1)
-                    weights.append(0.2)
-                else:
-                    signals.append(0)
-                    weights.append(0.2)
-            
-            # Segnale 4: Divergence (peso 15%)
-            if 'divergence_signal' in latest:
-                if latest['divergence_signal'] == 'DIVERGENT':
-                    # Divergenza è spesso contrarian
-                    if 'nc_net' in latest and latest['nc_net'] > 0:
-                        signals.append(-0.5)  # Cautela su long
-                    else:
-                        signals.append(0.5)   # Cautela su short
-                    weights.append(0.15)
-                else:
-                    signals.append(0)
-                    weights.append(0.15)
-            
-            # Segnale 5: Extreme positions (peso 10%)
-            if 'extreme_long' in latest and latest['extreme_long']:
-                signals.append(-0.5)  # Possibile inversione da estremo long
-                weights.append(0.1)
-            elif 'extreme_short' in latest and latest['extreme_short']:
-                signals.append(0.5)   # Possibile inversione da estremo short
-                weights.append(0.1)
+            if (total_long + total_short) > 0:
+                positions_data['sentiment_score'] = (
+                    (total_long - total_short) / (total_long + total_short) * 100
+                )
             else:
-                signals.append(0)
-                weights.append(0.1)
+                positions_data['sentiment_score'] = 0
             
-            # Calcola segnale complessivo
-            if signals and weights:
-                weighted_signal = np.average(signals, weights=weights)
-                
-                # Determina direzione e confidenza
-                if weighted_signal > 0.3:
-                    direction = 'BUY'
-                    confidence = min(abs(weighted_signal) * 100, 100)
-                elif weighted_signal < -0.3:
-                    direction = 'SELL'
-                    confidence = min(abs(weighted_signal) * 100, 100)
-                else:
-                    direction = 'NEUTRAL'
-                    confidence = 50
-                
-                return {
-                    'signal': direction,
-                    'strength': weighted_signal,
-                    'confidence': confidence,
-                    'components': {
-                        'sentiment': latest.get('sentiment_direction', 'N/A'),
-                        'momentum': latest.get('momentum_signal', 'N/A'),
-                        'z_score': latest.get('net_position_zscore', 0),
-                        'extreme': 'YES' if latest.get('extreme_long', False) or latest.get('extreme_short', False) else 'NO'
-                    }
-                }
+            # Calcola ratios (con protezione divisione per zero)
+            positions_data['nc_long_ratio'] = (
+                positions_data['non_commercial_long'] / 
+                max(positions_data['non_commercial_short'], 1)
+            )
             
-            return {'signal': 'INSUFFICIENT_DATA', 'confidence': 0}
+            positions_data['c_long_ratio'] = (
+                positions_data['commercial_long'] / 
+                max(positions_data['commercial_short'], 1)
+            )
             
-        except Exception as e:
-            logger.error(f"Errore generazione segnali: {str(e)}")
-            return {'signal': 'ERROR', 'confidence': 0}
-    
-    def export_analysis(self, format='json'):
-        """
-        Esporta l'analisi completa
-        
-        Args:
-            format: Formato output ('json', 'csv', 'excel')
-            
-        Returns:
-            str: Path del file salvato
-        """
-        try:
-            # Crea cartella output
-            os.makedirs(config.ANALYSIS_OUTPUT_FOLDER, exist_ok=True)
-            
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            
-            if format == 'json':
-                filename = f"analysis_{timestamp}.json"
-                filepath = os.path.join(config.ANALYSIS_OUTPUT_FOLDER, filename)
-                
-                export_data = {
-                    'timestamp': timestamp,
-                    'indicators': self.indicators,
-                    'signals': self.generate_signals(),
-                    'patterns': self.detect_patterns()
-                }
-                
-                # Aggiungi dati processati come lista
-                if self.processed_data is not None:
-                    export_data['data'] = self.processed_data.to_dict('records')
-                
-                with open(filepath, 'w') as f:
-                    json.dump(export_data, f, indent=2, default=str)
-                    
-            elif format == 'csv':
-                filename = f"analysis_{timestamp}.csv"
-                filepath = os.path.join(config.ANALYSIS_OUTPUT_FOLDER, filename)
-                
-                if self.processed_data is not None:
-                    self.processed_data.to_csv(filepath, index=False)
-                    
-            elif format == 'excel':
-                filename = f"analysis_{timestamp}.xlsx"
-                filepath = os.path.join(config.ANALYSIS_OUTPUT_FOLDER, filename)
-                
-                with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
-                    if self.processed_data is not None:
-                        self.processed_data.to_excel(writer, sheet_name='Data', index=False)
-                    
-                    # Aggiungi indicatori
-                    if self.indicators:
-                        pd.DataFrame([self.indicators]).to_excel(writer, sheet_name='Indicators', index=False)
-                    
-                    # Aggiungi segnali
-                    signals = self.generate_signals()
-                    pd.DataFrame([signals]).to_excel(writer, sheet_name='Signals', index=False)
-            
+            # Determina direzione sentiment
+            if positions_data['sentiment_score'] > config.SENTIMENT_THRESHOLD_BULLISH:
+                positions_data['sentiment_direction'] = 'BULLISH'
+            elif positions_data['sentiment_score'] < config.SENTIMENT_THRESHOLD_BEARISH:
+                positions_data['sentiment_direction'] = 'BEARISH'
             else:
-                raise ValueError(f"Formato {format} non supportato")
+                positions_data['sentiment_direction'] = 'NEUTRAL'
             
-            logger.info(f"✓ Analisi esportata in: {filepath}")
-            return filepath
+            logger.info(f"✓ Dati estratti per {symbol}")
+            logger.info(f"  Net Position: {positions_data['net_position']:,}")
+            logger.info(f"  Sentiment: {positions_data['sentiment_direction']} ({positions_data['sentiment_score']:.2f}%)")
+            
+            return positions_data
             
         except Exception as e:
-            logger.error(f"Errore esportazione: {str(e)}")
+            logger.error(f"✗ Errore durante scraping {symbol}: {str(e)}")
             return None
+    
+    def _extract_report_date(self):
+        """Estrae la data del report dalla pagina"""
+        try:
+            # Prova diversi selettori
+            selectors = [
+                'body > div.container > h3',
+                'h3',
+                '.date',
+                '.report-date'
+            ]
+            
+            date_text = None
+            for selector in selectors:
+                try:
+                    element = self.driver.find_element(By.CSS_SELECTOR, selector)
+                    date_text = element.text.strip()
+                    if date_text:
+                        break
+                except:
+                    continue
+            
+            if date_text:
+                # Cerca data in formato YYYY-MM-DD
+                match = re.search(r'\d{4}-\d{2}-\d{2}', date_text)
+                if match:
+                    date_str = match.group(0)
+                    return datetime.strptime(date_str, '%Y-%m-%d')
+            
+            logger.warning("Data report non trovata, uso data corrente")
+            return datetime.now()
+                
+        except Exception as e:
+            logger.warning(f"Errore estrazione data: {str(e)}")
+            return datetime.now()
+    
+    def _extract_positions_data(self):
+        """Estrae i dati delle posizioni dalla tabella"""
+        try:
+            # Trova la tabella
+            table = self.driver.find_element(By.CLASS_NAME, 'table-striped')
+            rows = table.find_elements(By.TAG_NAME, 'tr')
+            
+            if len(rows) < 4:
+                logger.error("Tabella non ha abbastanza righe")
+                return None
+            
+            # Prova diverse righe (alcuni report hanno strutture diverse)
+            for row_index in [3, 2, 4, 1]:
+                if row_index < len(rows):
+                    cells = rows[row_index].find_elements(By.TAG_NAME, 'td')
+                    if len(cells) >= 5:
+                        break
+            
+            if len(cells) < 5:
+                logger.error("Non trovo abbastanza celle nella tabella")
+                return None
+            
+            # Estrai valori
+            positions = {
+                'non_commercial_long': self._clean_number(cells[0].text),
+                'non_commercial_short': self._clean_number(cells[1].text),
+                'non_commercial_spreads': self._clean_number(cells[2].text) if len(cells) > 2 else 0,
+                'commercial_long': self._clean_number(cells[3].text) if len(cells) > 3 else 0,
+                'commercial_short': self._clean_number(cells[4].text) if len(cells) > 4 else 0,
+            }
+            
+            return positions
+            
+        except Exception as e:
+            logger.error(f"Errore estrazione dati: {str(e)}")
+            return None
+    
+    def _clean_number(self, text):
+        """Pulisce e converte stringhe numeriche in interi"""
+        try:
+            # Rimuovi tutto tranne numeri e segno meno
+            cleaned = re.sub(r'[^\d\-]', '', str(text))
+            return int(cleaned) if cleaned and cleaned != '-' else 0
+        except:
+            return 0
+    
+    def close(self):
+        """Chiude il driver browser e pulisce i file temporanei"""
+        if self.driver:
+            try:
+                self.driver.quit()
+                logger.info("✓ Browser chiuso")
+            except:
+                pass
+            self.driver = None
+        
+        # Cleanup directory temporanea
+        if self.temp_dir and os.path.exists(self.temp_dir):
+            try:
+                import shutil
+                shutil.rmtree(self.temp_dir, ignore_errors=True)
+                logger.info(f"✓ Pulizia temp dir: {self.temp_dir}")
+            except:
+                pass
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
-# Test del modulo
-if __name__ == "__main__":
-    print("🔬 Test Data Processor")
+# Funzione helper per compatibilità
+def test_scraper():
+    """Test rapido del scraper"""
+    print("🧪 Test Scraper COT")
     print("="*50)
     
-    # Crea dati di test
-    test_data = {
-        'symbol': 'GOLD',
-        'date': datetime.now(),
-        'non_commercial_long': 250000,
-        'non_commercial_short': 150000,
-        'commercial_long': 180000,
-        'commercial_short': 280000,
-        'net_position': 100000,
-        'sentiment_score': 15.5
-    }
+    scraper = COTScraper(headless=False)  # Mostra browser per debug
     
-    # Inizializza processor
-    processor = COTDataProcessor()
-    
-    # Carica dati
-    processor.load_data(test_data)
-    
-    # Calcola indicatori
-    processor.calculate_technical_indicators()
-    
-    # Genera segnali
-    signals = processor.generate_signals()
-    
-    print(f"\n📊 Risultati Analisi:")
-    print(f"Segnale: {signals['signal']}")
-    print(f"Confidenza: {signals['confidence']:.1f}%")
+    try:
+        data = scraper.scrape_cot_data('GOLD')
+        
+        if data:
+            print("\n✅ Scraping riuscito!")
+            print(f"Symbol: {data['symbol']}")
+            print(f"Net Position: {data['net_position']:,}")
+            print(f"Sentiment: {data['sentiment_direction']} ({data['sentiment_score']:.2f}%)")
+        else:
+            print("\n❌ Scraping fallito")
+            
+    finally:
+        scraper.close()
     
     print("\n" + "="*50)
+
+
+if __name__ == "__main__":
+    test_scraper()

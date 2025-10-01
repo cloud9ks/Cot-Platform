@@ -1,15 +1,7 @@
 """
-Analysis Module
-Moduli per analisi e previsioni
+Collectors package - Scraping dati COT
 """
 
-from .gpt_analyzer import GPTAnalyzer, quick_analysis, generate_daily_report
-from .predictions import COTPredictionSystem, generate_prediction
+from .cot_scraper import COTScraper
 
-__all__ = [
-    'GPTAnalyzer',
-    'quick_analysis',
-    'generate_daily_report',
-    'COTPredictionSystem',
-    'generate_prediction'
-]
+__all__ = ['COTScraper']

@@ -31,10 +31,14 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
     
-# AGGIUNGI QUESTE LINEE:
 # Fix encoding Unicode per JSON responses
 app.config['JSON_AS_ASCII'] = False
 app.config['JSON_SORT_KEYS'] = False
+app.config['JSONIFY_MIMETYPE'] = 'application/json; charset=utf-8'
+app.config['SESSION_COOKIE_SECURE'] = True  # Solo HTTPS in produzione
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 # Le tue configurazioni esistenti continuano qui...
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
@@ -67,6 +71,16 @@ from functools import wraps
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.login_message = 'Devi effettuare il login per accedere a questa pagina'
+login_manager.login_message_category = 'info'
+login_manager.session_protection = 'strong'  # Protezione sessione forte
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Handler per accessi non autorizzati"""
+    if request.is_json:
+        return jsonify({'error': 'Login richiesto'}), 401
+    return redirect('/login')
 
 class User(UserMixin, db.Model):
     """Modello User con supporto admin"""
@@ -1399,8 +1413,9 @@ def register():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """Dashboard principale"""
-    return render_template('dashboard.html')
+    """Dashboard principale con context utente"""
+    return render_template('dashboard.html', 
+                         current_user=current_user)
 
 @app.route('/<path:filename>')
 def serve_html_files(filename):
@@ -1750,44 +1765,182 @@ def get_user_info():
 
 
 # =================== AUTENTICAZIONE ROUTES ===================
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/auth/register', methods=['POST'])
+def auth_register():
+    """API endpoint per registrazione utente"""
+    try:
+        data = request.get_json()
+        
+        # Validazione input
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        first_name = data.get('firstName', '')
+        last_name = data.get('lastName', '')
+        plan = data.get('plan', 'starter')
+        
+        if not email or not password:
+            return jsonify({
+                'success': False,
+                'error': 'Email e password richiesti'
+            }), 400
+        
+        if len(password) < 8:
+            return jsonify({
+                'success': False,
+                'error': 'Password deve essere almeno 8 caratteri'
+            }), 400
+        
+        # Verifica email esistente
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({
+                'success': False,
+                'error': 'Email già registrata'
+            }), 400
+        
+        # Crea nuovo utente
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        
+        new_user = User(
+            email=email,
+            password_hash=hashed_password,
+            first_name=first_name,
+            last_name=last_name,
+            subscription_plan=plan,
+            subscription_status='active',
+            is_admin=False
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Auto-login dopo registrazione
+        login_user(new_user, remember=True)
+        
+        logger.info(f"✅ Nuovo utente registrato: {email}")
+        
+        return jsonify({
+            'success': True,
+            'redirect': '/dashboard',
+            'user': {
+                'email': new_user.email,
+                'plan': new_user.subscription_plan
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"❌ Errore registrazione: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Errore server: {str(e)}'
+        }), 500
+
+@app.route('/auth/login', methods=['POST'])
+def auth_login():
+    """API endpoint per login utente"""
+    try:
+        data = request.get_json()
+        
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            return jsonify({
+                'success': False,
+                'error': 'Email e password richiesti'
+            }), 400
+        
+        # Cerca utente
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'Credenziali non valide'
+            }), 401
+        
+        # Verifica password
+        if not check_password_hash(user.password_hash, password):
+            return jsonify({
+                'success': False,
+                'error': 'Credenziali non valide'
+            }), 401
+        
+        # Login utente
+        login_user(user, remember=True)
+        
+        logger.info(f"✅ Login effettuato: {email}")
+        
+        return jsonify({
+            'success': True,
+            'redirect': '/dashboard',
+            'user': {
+                'email': user.email,
+                'is_admin': user.is_admin,
+                'plan': user.subscription_plan
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Errore login: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Errore server: {str(e)}'
+        }), 500
+
+@app.route('/login', methods=['GET'])
+def login_page():
     """Pagina di login"""
-    if request.method == 'GET':
-        if current_user.is_authenticated:
-            return redirect('/dashboard')
-        return render_template('login.html')
-    
-    data = request.get_json() if request.is_json else request.form
-    email = data.get('email', '').strip()
-    password = data.get('password', '')
-    
-    if not email or not password:
-        return jsonify({'error': 'Email e password richiesti'}), 400
-    
-    user = User.query.filter_by(email=email).first()
-    
-    if not user or not check_password_hash(user.password_hash, password):
-        return jsonify({'error': 'Credenziali non valide'}), 401
-    
-    login_user(user, remember=True)
-    
-    return jsonify({
-        'success': True,
-        'redirect': '/dashboard',
-        'is_admin': user.is_admin
-    })
+    if current_user.is_authenticated:
+        return redirect('/dashboard')
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET'])  
+def register_page():
+    """Pagina di registrazione"""
+    if current_user.is_authenticated:
+        return redirect('/dashboard')
+    return render_template('register.html')
 
 @app.route('/logout')
 @login_required
 def logout():
-    """Logout"""
+    """Logout utente"""
+    email = current_user.email
     logout_user()
-    return redirect('/login')
+    logger.info(f"✅ Logout effettuato: {email}")
+    return redirect('/')
 
+# =================== CLI COMMANDS ===================
+@app.cli.command('create-admin')
+def create_admin():
+    """Crea utente admin - uso: flask create-admin"""
+    from werkzeug.security import generate_password_hash
+    
+    email = input("Email admin: ")
+    password = input("Password: ")
+    
+    if User.query.filter_by(email=email).first():
+        print("❌ Email già esistente")
+        return
+    
+    admin_user = User(
+        email=email,
+        password_hash=generate_password_hash(password),
+        first_name='Admin',
+        last_name='User',
+        is_admin=True,
+        subscription_plan='enterprise'
+    )
+    
+    db.session.add(admin_user)
+    db.session.commit()
+    
+    print(f"✅ Admin creato: {email}")
 
 if __name__ == '__main__':
     import os
