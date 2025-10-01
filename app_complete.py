@@ -1375,13 +1375,6 @@ def get_newest_data_date():
     except:
         return None
 # =================== API ROUTES ===================
-
-@app.route('/logout')
-@login_required  
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
-
 @app.route('/')
 def home():
     """Homepage"""
