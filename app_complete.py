@@ -1375,10 +1375,6 @@ def get_newest_data_date():
     except:
         return None
 # =================== API ROUTES ===================
-@app.route('/profile')
-@login_required
-def profile_page():
-    return render_template('profile.html')
 
 @app.route('/logout')
 @login_required  
