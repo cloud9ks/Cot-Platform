@@ -230,110 +230,51 @@ except ImportError as e:
     logger.warning(f"⚠️ Technical Analyzer non disponibile: {e}")
 
 
+
 def scrape_cot_data(symbol):
-    """Scraping dati COT per un simbolo specifico - VERSIONE CORRETTA"""
-    try:
-        # Importa il nuovo scraper
-        from collectors.cot_scraper import COTScraper
-        
-        # Usa il nuovo scraper
-        with COTScraper(headless=False) as scraper:
-            data = scraper.scrape_cot_data(symbol)
-            
-            # Se il scraper ha successo, ricalcola il sentiment
-            if data:
-                data['sentiment_score'] = calculate_cot_sentiment(
-                    data['non_commercial_long'],
-                    data['non_commercial_short'], 
-                    data['commercial_long'],
-                    data['commercial_short']
-                )
-                print(f" Sentiment ricalcolato per {symbol}: {data['sentiment_score']:.2f}%")
-            
-            return data
-            
-    except ImportError:
-        # Fallback al vecchio metodo se non trova il modulo
-        print("Usando metodo scraping vecchio...")
-        
+    """Scraping dati COT per un simbolo specifico - VERSIONE CORRETTA CON LOCK"""
+    
+    # Importa threading per gestire concorrenza
+    import threading
+    
+    # Lock globale per evitare scraping concorrenti
+    if not hasattr(scrape_cot_data, 'lock'):
+        scrape_cot_data.lock = threading.Lock()
+    
+    # Acquisisci lock - una sola istanza di scraping alla volta
+    with scrape_cot_data.lock:
         try:
-            from selenium import webdriver
-            from selenium.webdriver.chrome.service import Service
-            from selenium.webdriver.chrome.options import Options
-            from selenium.webdriver.common.by import By
-            import time
-            import re
+            # Importa il nuovo scraper
+            from collectors.cot_scraper import COTScraper
             
-            chrome_options = Options()
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--disable-gpu")
+            logger.info(f"🔄 Avvio scraping per {symbol}...")
             
-            # Prova con chromedriver.exe locale
-            if os.path.exists("chromedriver.exe"):
-                service = Service("chromedriver.exe")
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-            else:
-                driver = webdriver.Chrome(options=chrome_options)
-            
-            url = COT_SYMBOLS[symbol]['url']
-            driver.get(url)
-            time.sleep(5)
-            
-            # Estrai dati
-            table = driver.find_element(By.CLASS_NAME, 'table-striped')
-            rows = table.find_elements(By.TAG_NAME, 'tr')
-            
-            if len(rows) > 3:
-                cells = rows[3].find_elements(By.TAG_NAME, 'td')
+            # Usa il nuovo scraper con context manager (chiude automaticamente)
+            with COTScraper(headless=True) as scraper:
+                data = scraper.scrape_cot_data(symbol)
                 
-                non_commercial_long = int(cells[0].text.replace(',', ''))
-                non_commercial_short = int(cells[1].text.replace(',', ''))
-                commercial_long = int(cells[3].text.replace(',', ''))
-                commercial_short = int(cells[4].text.replace(',', ''))
+                # Se il scraper ha successo, ricalcola il sentiment
+                if data:
+                    data['sentiment_score'] = calculate_cot_sentiment(
+                        data['non_commercial_long'],
+                        data['non_commercial_short'], 
+                        data['commercial_long'],
+                        data['commercial_short']
+                    )
+                    logger.info(f"✅ Sentiment ricalcolato per {symbol}: {data['sentiment_score']:.2f}%")
+                else:
+                    logger.warning(f"⚠️ Scraper ha ritornato None per {symbol}")
                 
-                driver.quit()
+                return data
                 
-                net_position = non_commercial_long - non_commercial_short
-                
-                # USA IL NUOVO CALCOLO SENTIMENT
-                sentiment_score = calculate_cot_sentiment(
-                    non_commercial_long,
-                    non_commercial_short,
-                    commercial_long, 
-                    commercial_short
-                )
-                
-                print(f" Scraping completato per {symbol}")
-                print(f"   Net Position: {net_position:,}")
-                print(f"   Sentiment Score (nuovo): {sentiment_score:.2f}%")
-                
-                return {
-                    'symbol': symbol,
-                    'date': datetime.now(),
-                    'non_commercial_long': non_commercial_long,
-                    'non_commercial_short': non_commercial_short,
-                    'commercial_long': commercial_long,
-                    'commercial_short': commercial_short,
-                    'net_position': net_position,
-                    'sentiment_score': sentiment_score
-                }
-            
-            driver.quit()
+        except ImportError as e:
+            logger.error(f"❌ Modulo COTScraper non trovato: {e}")
             return None
             
         except Exception as e:
-            print(f" Errore scraping {symbol}: {str(e)}")
-            if 'driver' in locals():
-                try:
-                    driver.quit()
-                except:
-                    pass
+            logger.error(f"❌ Errore generale scraping {symbol}: {str(e)}")
             return None
-    
-    except Exception as e:
-        print(f" Errore generale scraping: {str(e)}")
-        return None
+
 
 # =================== ANALISI GPT-4 CORRETTA ===================
 def analyze_with_gpt(data):
