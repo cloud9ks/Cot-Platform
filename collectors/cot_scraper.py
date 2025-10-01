@@ -1,5 +1,5 @@
 """
-COT Scraper Module - VERSIONE DOCKER OTTIMIZZATA
+COT Scraper Module - VERSIONE DOCKER OTTIMIZZATA FIXED
 Compatibile sia con ambiente locale che con Docker/Render
 """
 
@@ -18,6 +18,8 @@ import logging
 import os
 import sys
 import platform
+import tempfile
+import uuid
 
 # Aggiungi path per import del config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -69,16 +71,44 @@ class COTScraper:
         self.driver = None
         self.wait_time = config.SELENIUM_WAIT_TIME
         self.timeout = config.SELENIUM_TIMEOUT
+        self.temp_dir = None  # Per cleanup
         
     def setup_driver(self):
         """Configura il driver Chrome con le opzioni ottimali"""
         try:
             chrome_options = Options()
             
+            # FIX CRITICO: Crea directory temporanea unica per ogni istanza
+            self.temp_dir = os.path.join(tempfile.gettempdir(), f'chrome_{uuid.uuid4()}')
+            os.makedirs(self.temp_dir, exist_ok=True)
+            
             # OPZIONI CRITICHE PER DOCKER
             chrome_options.add_argument("--no-sandbox")  # ESSENZIALE per Docker
             chrome_options.add_argument("--disable-dev-shm-usage")  # ESSENZIALE per Docker
             chrome_options.add_argument("--disable-gpu")
+            
+            # FIX: User data directory unica
+            chrome_options.add_argument(f"--user-data-dir={self.temp_dir}")
+            
+            # Previeni altri conflitti
+            chrome_options.add_argument("--no-first-run")
+            chrome_options.add_argument("--no-default-browser-check")
+            chrome_options.add_argument("--disable-background-networking")
+            chrome_options.add_argument("--disable-background-timer-throttling")
+            chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+            chrome_options.add_argument("--disable-breakpad")
+            chrome_options.add_argument("--disable-client-side-phishing-detection")
+            chrome_options.add_argument("--disable-component-update")
+            chrome_options.add_argument("--disable-default-apps")
+            chrome_options.add_argument("--disable-hang-monitor")
+            chrome_options.add_argument("--disable-popup-blocking")
+            chrome_options.add_argument("--disable-prompt-on-repost")
+            chrome_options.add_argument("--disable-sync")
+            chrome_options.add_argument("--disable-translate")
+            chrome_options.add_argument("--metrics-recording-only")
+            chrome_options.add_argument("--no-first-run")
+            chrome_options.add_argument("--safebrowsing-disable-auto-update")
+            chrome_options.add_argument("--remote-debugging-port=0")  # Porta random
             
             # Modalità headless
             if self.headless:
@@ -94,9 +124,15 @@ class COTScraper:
             chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             
             # Disabilita notifiche
-            prefs = {"profile.default_content_setting_values.notifications": 2}
+            prefs = {
+                "profile.default_content_setting_values.notifications": 2,
+                "profile.default_content_settings.popups": 0,
+                "download.prompt_for_download": False,
+                "download.directory_upgrade": True,
+                "safebrowsing.enabled": False
+            }
             chrome_options.add_experimental_option("prefs", prefs)
-            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
             
             # STRATEGIA DI FALLBACK MULTIPLA
@@ -150,6 +186,7 @@ class COTScraper:
             # Configura timeout implicito
             self.driver.implicitly_wait(10)
             
+            logger.info(f"Chrome driver pronto con temp dir: {self.temp_dir}")
             return True
             
         except Exception as e:
@@ -341,7 +378,7 @@ class COTScraper:
             return 0
     
     def close(self):
-        """Chiude il driver browser"""
+        """Chiude il driver browser e pulisce i file temporanei"""
         if self.driver:
             try:
                 self.driver.quit()
@@ -349,6 +386,15 @@ class COTScraper:
             except:
                 pass
             self.driver = None
+        
+        # Cleanup directory temporanea
+        if self.temp_dir and os.path.exists(self.temp_dir):
+            try:
+                import shutil
+                shutil.rmtree(self.temp_dir, ignore_errors=True)
+                logger.info(f"✓ Pulizia temp dir: {self.temp_dir}")
+            except:
+                pass
     
     def __enter__(self):
         return self
