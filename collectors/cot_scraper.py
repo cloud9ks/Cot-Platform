@@ -1,6 +1,6 @@
 """
-COT Scraper Module - VERSIONE CORRETTA
-Scraping dei dati COT con gestione errori migliorata
+COT Scraper Module - VERSIONE DOCKER OTTIMIZZATA
+Compatibile sia con ambiente locale che con Docker/Render
 """
 
 from selenium import webdriver
@@ -11,7 +11,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.core.os_manager import ChromeType
-import pandas as pd
 import time
 import re
 from datetime import datetime
@@ -27,9 +26,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from config import current_config as config
 except:
-    # Config di default se non trova il file
     class config:
-        SELENIUM_HEADLESS = False
+        SELENIUM_HEADLESS = True
         SELENIUM_WAIT_TIME = 10
         SELENIUM_TIMEOUT = 30
         SENTIMENT_THRESHOLD_BULLISH = 20
@@ -54,8 +52,11 @@ except:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Rileva se siamo in ambiente Docker
+IS_DOCKER = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_ENV') == 'true'
+
 class COTScraper:
-    """Classe principale per lo scraping dei dati COT"""
+    """Classe principale per lo scraping dei dati COT - ottimizzata per Docker e locale"""
     
     def __init__(self, headless=None):
         """
@@ -74,69 +75,89 @@ class COTScraper:
         try:
             chrome_options = Options()
             
-            # Configurazione per Windows
-            if platform.system() == 'Windows':
-                chrome_options.add_argument("--disable-gpu")
-                chrome_options.add_argument("--disable-software-rasterizer")
+            # OPZIONI CRITICHE PER DOCKER
+            chrome_options.add_argument("--no-sandbox")  # ESSENZIALE per Docker
+            chrome_options.add_argument("--disable-dev-shm-usage")  # ESSENZIALE per Docker
+            chrome_options.add_argument("--disable-gpu")
             
-            # Modalità headless opzionale
+            # Modalità headless
             if self.headless:
-                chrome_options.add_argument("--headless=new")  # Nuova sintassi headless
+                chrome_options.add_argument("--headless=new")
             
-            # Opzioni per stabilità
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
+            # Ottimizzazioni performance
+            chrome_options.add_argument("--disable-software-rasterizer")
             chrome_options.add_argument("--disable-blink-features=AutomationControlled")
             chrome_options.add_argument("--window-size=1920,1080")
+            chrome_options.add_argument("--disable-extensions")
             
-            # Disabilita le notifiche
+            # User agent realistico
+            chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            
+            # Disabilita notifiche
             prefs = {"profile.default_content_setting_values.notifications": 2}
             chrome_options.add_experimental_option("prefs", prefs)
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
             
-            # User agent
-            chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            # STRATEGIA DI FALLBACK MULTIPLA
+            driver_initialized = False
             
-            try:
-                # Prova a usare webdriver-manager
-                logger.info("Tentativo di installazione ChromeDriver automatica...")
-                driver_path = ChromeDriverManager().install()
-                
-                # Verifica che il file esista e sia valido
-                if not os.path.exists(driver_path):
-                    raise Exception("Driver non trovato nel path specificato")
-                
-                service = Service(driver_path)
-                self.driver = webdriver.Chrome(service=service, options=chrome_options)
-                
-            except Exception as e:
-                logger.warning(f"WebDriver Manager fallito: {e}")
-                logger.info("Tentativo con driver di sistema...")
-                
-                # Fallback: prova con il driver di sistema
+            # Tentativo 1: Chrome di sistema (funziona in Docker se Chrome è installato)
+            if IS_DOCKER or platform.system() == 'Linux':
                 try:
+                    logger.info("Tentativo con Chrome di sistema (Docker/Linux)...")
                     self.driver = webdriver.Chrome(options=chrome_options)
-                except:
-                    # Ultimo tentativo: cerca chromedriver.exe locale
+                    driver_initialized = True
+                    logger.info("✓ Chrome driver configurato (sistema)")
+                except Exception as e:
+                    logger.warning(f"Chrome di sistema fallito: {str(e)}")
+            
+            # Tentativo 2: WebDriver Manager (per ambiente locale)
+            if not driver_initialized:
+                try:
+                    logger.info("Tentativo con WebDriver Manager...")
+                    driver_path = ChromeDriverManager().install()
+                    
+                    if not os.path.exists(driver_path):
+                        raise Exception("Driver non trovato nel path specificato")
+                    
+                    service = Service(driver_path)
+                    self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                    driver_initialized = True
+                    logger.info("✓ Chrome driver configurato (WebDriver Manager)")
+                except Exception as e:
+                    logger.warning(f"WebDriver Manager fallito: {str(e)}")
+            
+            # Tentativo 3: Driver locale (chromedriver.exe nella cartella)
+            if not driver_initialized:
+                try:
+                    logger.info("Tentativo con driver locale...")
                     if os.path.exists("chromedriver.exe"):
                         service = Service("chromedriver.exe")
                         self.driver = webdriver.Chrome(service=service, options=chrome_options)
-                    else:
-                        raise Exception(
-                            "ChromeDriver non trovato. Scaricalo da: "
-                            "https://chromedriver.chromium.org/downloads"
-                        )
+                        driver_initialized = True
+                        logger.info("✓ Chrome driver configurato (locale)")
+                except Exception as e:
+                    logger.warning(f"Driver locale fallito: {str(e)}")
+            
+            if not driver_initialized:
+                raise Exception(
+                    "ChromeDriver non disponibile. "
+                    "In Docker: assicurati che Chrome sia installato. "
+                    "In locale: scarica ChromeDriver da https://chromedriver.chromium.org/"
+                )
             
             # Configura timeout implicito
             self.driver.implicitly_wait(10)
             
-            logger.info("✓ Chrome driver configurato con successo")
             return True
             
         except Exception as e:
             logger.error(f"✗ Errore configurazione driver: {str(e)}")
-            logger.info("SOLUZIONE: Scarica ChromeDriver manualmente da https://chromedriver.chromium.org/")
+            if IS_DOCKER:
+                logger.error("SOLUZIONE DOCKER: Assicurati che il Dockerfile installi Chrome correttamente")
+            else:
+                logger.error("SOLUZIONE LOCALE: Scarica ChromeDriver da https://chromedriver.chromium.org/")
             return False
     
     def scrape_cot_data(self, symbol):
@@ -289,7 +310,6 @@ class COTScraper:
                 if row_index < len(rows):
                     cells = rows[row_index].find_elements(By.TAG_NAME, 'td')
                     if len(cells) >= 5:
-                        # Abbiamo trovato la riga giusta
                         break
             
             if len(cells) < 5:
@@ -337,7 +357,7 @@ class COTScraper:
         self.close()
 
 
-# Funzione semplificata per test
+# Funzione helper per compatibilità
 def test_scraper():
     """Test rapido del scraper"""
     print("🧪 Test Scraper COT")
@@ -346,7 +366,6 @@ def test_scraper():
     scraper = COTScraper(headless=False)  # Mostra browser per debug
     
     try:
-        # Test su GOLD
         data = scraper.scrape_cot_data('GOLD')
         
         if data:
@@ -356,10 +375,6 @@ def test_scraper():
             print(f"Sentiment: {data['sentiment_direction']} ({data['sentiment_score']:.2f}%)")
         else:
             print("\n❌ Scraping fallito")
-            print("Possibili soluzioni:")
-            print("1. Installa Chrome: https://www.google.com/chrome/")
-            print("2. Scarica ChromeDriver: https://chromedriver.chromium.org/")
-            print("3. Metti chromedriver.exe nella stessa cartella di questo script")
             
     finally:
         scraper.close()
