@@ -1,6 +1,7 @@
 """
 COT Scraper Module - VERSIONE DOCKER OTTIMIZZATA FIXED
 Compatibile sia con ambiente locale che con Docker/Render
+FIX: Risolto errore "user data directory is already in use"
 """
 
 from selenium import webdriver
@@ -10,7 +11,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.os_manager import ChromeType
 import time
 import re
 from datetime import datetime
@@ -20,6 +20,7 @@ import sys
 import platform
 import tempfile
 import uuid
+import random
 
 # Aggiungi path per import del config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -46,6 +47,18 @@ except:
                 'url': 'https://www.tradingster.com/cot/legacy-futures/098662',
                 'name': 'US Dollar Index',
                 'code': '098662',
+                'category': 'currencies'
+            },
+            'EUR': {
+                'url': 'https://www.tradingster.com/cot/legacy-futures/099741',
+                'name': 'Euro FX',
+                'code': '099741',
+                'category': 'currencies'
+            },
+            'GBP': {
+                'url': 'https://www.tradingster.com/cot/legacy-futures/096742',
+                'name': 'British Pound',
+                'code': '096742',
                 'category': 'currencies'
             }
         }
@@ -74,44 +87,56 @@ class COTScraper:
         self.temp_dir = None  # Per cleanup
         
     def setup_driver(self):
-        """Configura il driver Chrome con le opzioni ottimali"""
+        """
+        Configura il driver Chrome con le opzioni ottimali
+        FIX: Directory temporanea unica per ogni istanza + porta debug random
+        """
         try:
             chrome_options = Options()
             
-            # FIX CRITICO: Crea directory temporanea unica per ogni istanza
-            self.temp_dir = os.path.join(tempfile.gettempdir(), f'chrome_{uuid.uuid4()}')
+            # FIX CRITICO: Directory temporanea UNICA con timestamp + UUID
+            unique_id = f"chrome_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+            self.temp_dir = os.path.join(tempfile.gettempdir(), unique_id)
             os.makedirs(self.temp_dir, exist_ok=True)
             
-            # OPZIONI CRITICHE PER DOCKER
-            chrome_options.add_argument("--no-sandbox")  # ESSENZIALE per Docker
-            chrome_options.add_argument("--disable-dev-shm-usage")  # ESSENZIALE per Docker
+            # Permessi completi per Docker
+            try:
+                os.chmod(self.temp_dir, 0o777)
+            except:
+                pass  # Windows non supporta chmod
+            
+            logger.info(f"Temp dir creata: {self.temp_dir}")
+            
+            # OPZIONI CRITICHE PER DOCKER/RENDER
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
             chrome_options.add_argument("--disable-gpu")
             
-            # FIX: User data directory unica
+            # FIX: User data directory UNICA
             chrome_options.add_argument(f"--user-data-dir={self.temp_dir}")
             
-            # Previeni altri conflitti
+            # FIX: Remote debugging su porta RANDOM per evitare conflitti
+            debug_port = random.randint(9222, 9999)
+            chrome_options.add_argument(f"--remote-debugging-port={debug_port}")
+            logger.info(f"Debug port: {debug_port}")
+            
+            # Previeni conflitti di sessione
             chrome_options.add_argument("--no-first-run")
             chrome_options.add_argument("--no-default-browser-check")
             chrome_options.add_argument("--disable-background-networking")
             chrome_options.add_argument("--disable-background-timer-throttling")
             chrome_options.add_argument("--disable-backgrounding-occluded-windows")
-            chrome_options.add_argument("--disable-breakpad")
             chrome_options.add_argument("--disable-client-side-phishing-detection")
-            chrome_options.add_argument("--disable-component-update")
             chrome_options.add_argument("--disable-default-apps")
             chrome_options.add_argument("--disable-hang-monitor")
             chrome_options.add_argument("--disable-popup-blocking")
-            chrome_options.add_argument("--disable-prompt-on-repost")
             chrome_options.add_argument("--disable-sync")
             chrome_options.add_argument("--disable-translate")
             chrome_options.add_argument("--metrics-recording-only")
-            chrome_options.add_argument("--no-first-run")
             chrome_options.add_argument("--safebrowsing-disable-auto-update")
-            chrome_options.add_argument("--remote-debugging-port=0")  # Porta random
             
-            # Modalità headless
-            if self.headless:
+            # Modalità headless SEMPRE in Docker/produzione
+            if self.headless or IS_DOCKER:
                 chrome_options.add_argument("--headless=new")
             
             # Ottimizzazioni performance
@@ -121,9 +146,12 @@ class COTScraper:
             chrome_options.add_argument("--disable-extensions")
             
             # User agent realistico
-            chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            chrome_options.add_argument(
+                "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
             
-            # Disabilita notifiche
+            # Preferences
             prefs = {
                 "profile.default_content_setting_values.notifications": 2,
                 "profile.default_content_settings.popups": 0,
@@ -137,21 +165,39 @@ class COTScraper:
             
             # STRATEGIA DI FALLBACK MULTIPLA
             driver_initialized = False
+            last_error = None
             
-            # Tentativo 1: Chrome di sistema (funziona in Docker se Chrome è installato)
+            # Tentativo 1: Chrome di sistema (DOCKER/LINUX)
             if IS_DOCKER or platform.system() == 'Linux':
                 try:
-                    logger.info("Tentativo con Chrome di sistema (Docker/Linux)...")
+                    logger.info("Tentativo Chrome di sistema (Docker/Linux)...")
+                    
+                    # Cerca Chrome in percorsi comuni Linux
+                    chrome_paths = [
+                        '/usr/bin/google-chrome',
+                        '/usr/bin/chromium-browser',
+                        '/usr/bin/chromium',
+                        '/snap/bin/chromium'
+                    ]
+                    
+                    for chrome_path in chrome_paths:
+                        if os.path.exists(chrome_path):
+                            chrome_options.binary_location = chrome_path
+                            logger.info(f"Chrome trovato: {chrome_path}")
+                            break
+                    
                     self.driver = webdriver.Chrome(options=chrome_options)
                     driver_initialized = True
-                    logger.info("✓ Chrome driver configurato (sistema)")
+                    logger.info("Chrome driver configurato (sistema)")
+                    
                 except Exception as e:
-                    logger.warning(f"Chrome di sistema fallito: {str(e)}")
+                    last_error = str(e)
+                    logger.warning(f"Chrome di sistema fallito: {last_error}")
             
-            # Tentativo 2: WebDriver Manager (per ambiente locale)
+            # Tentativo 2: WebDriver Manager (LOCALE)
             if not driver_initialized:
                 try:
-                    logger.info("Tentativo con WebDriver Manager...")
+                    logger.info("Tentativo WebDriver Manager...")
                     driver_path = ChromeDriverManager().install()
                     
                     if not os.path.exists(driver_path):
@@ -160,11 +206,13 @@ class COTScraper:
                     service = Service(driver_path)
                     self.driver = webdriver.Chrome(service=service, options=chrome_options)
                     driver_initialized = True
-                    logger.info("✓ Chrome driver configurato (WebDriver Manager)")
+                    logger.info("Chrome driver configurato (WebDriver Manager)")
+                    
                 except Exception as e:
-                    logger.warning(f"WebDriver Manager fallito: {str(e)}")
+                    last_error = str(e)
+                    logger.warning(f"WebDriver Manager fallito: {last_error}")
             
-            # Tentativo 3: Driver locale (chromedriver.exe nella cartella)
+            # Tentativo 3: Driver locale (chromedriver.exe)
             if not driver_initialized:
                 try:
                     logger.info("Tentativo con driver locale...")
@@ -172,29 +220,34 @@ class COTScraper:
                         service = Service("chromedriver.exe")
                         self.driver = webdriver.Chrome(service=service, options=chrome_options)
                         driver_initialized = True
-                        logger.info("✓ Chrome driver configurato (locale)")
+                        logger.info("Chrome driver configurato (locale)")
                 except Exception as e:
-                    logger.warning(f"Driver locale fallito: {str(e)}")
+                    last_error = str(e)
+                    logger.warning(f"Driver locale fallito: {last_error}")
             
             if not driver_initialized:
-                raise Exception(
-                    "ChromeDriver non disponibile. "
-                    "In Docker: assicurati che Chrome sia installato. "
-                    "In locale: scarica ChromeDriver da https://chromedriver.chromium.org/"
+                error_msg = (
+                    f"ChromeDriver non disponibile. Ultimo errore: {last_error}\n"
                 )
+                if IS_DOCKER:
+                    error_msg += "DOCKER: Verifica che Chrome sia installato nel container"
+                else:
+                    error_msg += "LOCALE: Scarica ChromeDriver da chromedriver.chromium.org"
+                
+                logger.error(error_msg)
+                self._cleanup_temp_dir()  # Pulisci in caso di errore
+                raise Exception(error_msg)
             
-            # Configura timeout implicito
+            # Configura timeout
+            self.driver.set_page_load_timeout(self.timeout)
             self.driver.implicitly_wait(10)
             
-            logger.info(f"Chrome driver pronto con temp dir: {self.temp_dir}")
+            logger.info("Chrome driver pronto!")
             return True
             
         except Exception as e:
-            logger.error(f"✗ Errore configurazione driver: {str(e)}")
-            if IS_DOCKER:
-                logger.error("SOLUZIONE DOCKER: Assicurati che il Dockerfile installi Chrome correttamente")
-            else:
-                logger.error("SOLUZIONE LOCALE: Scarica ChromeDriver da https://chromedriver.chromium.org/")
+            logger.error(f"Errore configurazione driver: {str(e)}")
+            self._cleanup_temp_dir()
             return False
     
     def scrape_cot_data(self, symbol):
@@ -219,7 +272,7 @@ class COTScraper:
             
             # Ottieni URL per il simbolo
             url = config.COT_SYMBOLS[symbol]['url']
-            logger.info(f"📊 Scraping {symbol} da: {url}")
+            logger.info(f"Scraping {symbol} da: {url}")
             
             # Naviga alla pagina
             self.driver.get(url)
@@ -286,14 +339,14 @@ class COTScraper:
             else:
                 positions_data['sentiment_direction'] = 'NEUTRAL'
             
-            logger.info(f"✓ Dati estratti per {symbol}")
+            logger.info(f"Dati estratti per {symbol}")
             logger.info(f"  Net Position: {positions_data['net_position']:,}")
             logger.info(f"  Sentiment: {positions_data['sentiment_direction']} ({positions_data['sentiment_score']:.2f}%)")
             
             return positions_data
             
         except Exception as e:
-            logger.error(f"✗ Errore durante scraping {symbol}: {str(e)}")
+            logger.error(f"Errore durante scraping {symbol}: {str(e)}")
             return None
     
     def _extract_report_date(self):
@@ -377,24 +430,30 @@ class COTScraper:
         except:
             return 0
     
-    def close(self):
-        """Chiude il driver browser e pulisce i file temporanei"""
-        if self.driver:
-            try:
-                self.driver.quit()
-                logger.info("✓ Browser chiuso")
-            except:
-                pass
-            self.driver = None
-        
-        # Cleanup directory temporanea
+    def _cleanup_temp_dir(self):
+        """Pulisce la directory temporanea - NUOVO METODO"""
         if self.temp_dir and os.path.exists(self.temp_dir):
             try:
                 import shutil
                 shutil.rmtree(self.temp_dir, ignore_errors=True)
-                logger.info(f"✓ Pulizia temp dir: {self.temp_dir}")
-            except:
-                pass
+                logger.info(f"Temp dir pulita: {self.temp_dir}")
+            except Exception as e:
+                logger.warning(f"Errore pulizia temp dir: {e}")
+    
+    def close(self):
+        """Chiude il driver browser e pulisce i file temporanei - MIGLIORATO"""
+        if self.driver:
+            try:
+                self.driver.quit()
+                time.sleep(0.5)  # Attendi cleanup Chrome
+                logger.info("Browser chiuso")
+            except Exception as e:
+                logger.warning(f"Errore chiusura browser: {e}")
+            finally:
+                self.driver = None
+        
+        # Cleanup directory temporanea
+        self._cleanup_temp_dir()
     
     def __enter__(self):
         return self
@@ -406,7 +465,7 @@ class COTScraper:
 # Funzione helper per compatibilità
 def test_scraper():
     """Test rapido del scraper"""
-    print("🧪 Test Scraper COT")
+    print("Test Scraper COT")
     print("="*50)
     
     scraper = COTScraper(headless=False)  # Mostra browser per debug
@@ -415,12 +474,12 @@ def test_scraper():
         data = scraper.scrape_cot_data('GOLD')
         
         if data:
-            print("\n✅ Scraping riuscito!")
+            print("\nScraping riuscito!")
             print(f"Symbol: {data['symbol']}")
             print(f"Net Position: {data['net_position']:,}")
             print(f"Sentiment: {data['sentiment_direction']} ({data['sentiment_score']:.2f}%)")
         else:
-            print("\n❌ Scraping fallito")
+            print("\nScraping fallito")
             
     finally:
         scraper.close()

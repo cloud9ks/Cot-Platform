@@ -1,8 +1,11 @@
-# Usa un'immagine base con Python
+# Dockerfile COT Platform - Render/Docker
 FROM python:3.11-slim-bullseye
 
 # Evita prompt interattivi
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    DOCKER_ENV=true \
+    PYTHONUNBUFFERED=1 \
+    PORT=10000
 
 # Installa dipendenze sistema necessarie
 RUN apt-get update && apt-get install -y \
@@ -55,12 +58,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copia tutto il codice dell'applicazione
 COPY . .
 
-# Crea directory per il database se non esiste
-RUN mkdir -p /app/data
-
-# Variabili d'ambiente
-ENV PYTHONUNBUFFERED=1
-ENV PORT=10000
+# Crea directory necessarie con permessi corretti
+RUN mkdir -p /app/data /tmp/chrome_sessions && \
+    chmod -R 777 /tmp/chrome_sessions
 
 # Esponi la porta
 EXPOSE 10000
