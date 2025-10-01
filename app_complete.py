@@ -1375,6 +1375,17 @@ def get_newest_data_date():
     except:
         return None
 # =================== API ROUTES ===================
+@app.route('/profile')
+@login_required
+def profile_page():
+    return render_template('profile.html')
+
+@app.route('/logout')
+@login_required  
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
 @app.route('/')
 def home():
     """Homepage"""
@@ -1748,6 +1759,72 @@ def backtest(symbol):
         'accuracy': accuracy,
         'avg_confidence': np.mean([p.confidence for p in predictions])
     })
+@app.route('/profile')
+@login_required
+def profile_page():
+    """Pagina profilo utente"""
+    from datetime import datetime
+    
+    # Calcola statistiche utente
+    stats = {
+        'days_active': (datetime.utcnow() - current_user.created_at).days,
+        'analyses_count': 156,  # Da sostituire con query reale
+        'assets_tracked': 12,   # Da sostituire con query reale
+        'accuracy': 92          # Da sostituire con calcolo reale
+    }
+    
+    return render_template('profile.html', stats=stats)
+
+@app.route('/auth/update-profile', methods=['POST'])
+@login_required
+def update_profile():
+    """Aggiorna dati utente"""
+    data = request.json
+    
+    try:
+        current_user.first_name = data['firstName']
+        current_user.last_name = data['lastName']
+        current_user.email = data['email']
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/auth/change-password', methods=['POST'])
+@login_required
+def change_password():
+    """Cambia password utente"""
+    from werkzeug.security import check_password_hash, generate_password_hash
+    data = request.json
+    
+    # Verifica password attuale
+    if not check_password_hash(current_user.password, data['currentPassword']):
+        return jsonify({'success': False, 'error': 'Password attuale errata'}), 400
+    
+    # Aggiorna password
+    try:
+        current_user.password = generate_password_hash(data['newPassword'])
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/auth/update-preferences', methods=['POST'])
+@login_required
+def update_preferences():
+    """Aggiorna preferenze utente"""
+    data = request.json
+    
+    try:
+        current_user.email_notifications = data.get('emailNotifications', False)
+        current_user.newsletter = data.get('newsletter', False)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # =================== SCHEDULED TASKS ===================
 def scheduled_scraping():

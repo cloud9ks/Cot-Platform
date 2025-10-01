@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Il Mio Profilo - COT Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding-top: 80px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .navbar {
+            background: var(--primary);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        .navbar-brand, .btn-light {
+            color: white !important;
+            font-weight: 600;
+        }
+        .profile-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 50px;
+        }
+        .profile-header {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .profile-avatar:hover {
+            transform: scale(1.05);
+        }
+        .card-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #667eea;
+        }
+        .plan-badge {
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .plan-starter { background: #e0f2fe; color: #0369a1; }
+        .plan-professional { background: #d1fae5; color: #065f46; }
+        .plan-enterprise { background: #ede9fe; color: #5b21b6; }
+        .form-control {
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line"></i> COT Analysis
+            </a>
+            <div class="d-flex gap-2">
+                <a href="/dashboard" class="btn btn-sm btn-light">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </a>
+                <a href="/logout" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <!-- Header con Avatar -->
+        <div class="profile-header">
+            <div class="row align-items-center">
+                <div class="col-md-auto">
+                    <div class="profile-avatar" title="Cambia avatar">
+                        {{ current_user.first_name[0]|upper }}{{ current_user.last_name[0]|upper }}
+                    </div>
+                </div>
+                <div class="col-md">
+                    <h2 class="mb-2">{{ current_user.first_name }} {{ current_user.last_name }}</h2>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-envelope me-2"></i>{{ current_user.email }}
+                    </p>
+                    <span class="plan-badge plan-{{ current_user.plan }}">
+                        <i class="fas fa-crown me-1"></i>Piano {{ current_user.plan|capitalize }}
+                    </span>
+                </div>
+                <div class="col-md-auto">
+                    <div class="text-muted small">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Membro da: {{ current_user.created_at.strftime('%d/%m/%Y') }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiche Rapide -->
+            <div class="row g-3 mt-4">
+                <div class="col-md-3">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ stats.days_active }}</div>
+                        <small class="text-muted">Giorni attivo</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ stats.analyses_count }}</div>
+                        <small class="text-muted">Analisi effettuate</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ stats.assets_tracked }}</div>
+                        <small class="text-muted">Asset monitorati</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ stats.accuracy }}%</div>
+                        <small class="text-muted">Accuratezza</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Informazioni Account -->
+                <div class="card-section">
+                    <h4 class="mb-4">
+                        <i class="fas fa-user-cog me-2 text-primary"></i>
+                        Informazioni Account
+                    </h4>
+                    
+                    <div id="alertProfile"></div>
+                    
+                    <form id="profileForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome</label>
+                                <input type="text" class="form-control" id="firstName" 
+                                       value="{{ current_user.first_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cognome</label>
+                                <input type="text" class="form-control" id="lastName" 
+                                       value="{{ current_user.last_name }}" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" 
+                                       value="{{ current_user.email }}" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="fas fa-save"></i> Salva Modifiche
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Cambio Password -->
+                <div class="card-section">
+                    <h4 class="mb-4">
+                        <i class="fas fa-lock me-2 text-primary"></i>
+                        Sicurezza
+                    </h4>
+                    
+                    <div id="alertPassword"></div>
+                    
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label class="form-label">Password Attuale</label>
+                            <input type="password" class="form-control" id="currentPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nuova Password</label>
+                            <input type="password" class="form-control" id="newPassword" 
+                                   required minlength="8">
+                            <small class="text-muted">Minimo 8 caratteri</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Conferma Nuova Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-key"></i> Aggiorna Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Abbonamento -->
+                <div class="card-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-credit-card me-2 text-success"></i>
+                        Abbonamento
+                    </h5>
+                    <div class="mb-3">
+                        <strong>Piano Attuale:</strong><br>
+                        <span class="plan-badge plan-{{ current_user.plan }}">
+                            {{ current_user.plan|capitalize }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Prezzo:</strong><br>
+                        {% if current_user.plan == 'starter' %}
+                        €12.99/mese
+                        {% elif current_user.plan == 'professional' %}
+                        €49/mese
+                        {% elif current_user.plan == 'enterprise' %}
+                        €199/mese
+                        {% endif %}
+                    </div>
+                    <a href="/pricing" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-exchange-alt"></i> Cambia Piano
+                    </a>
+                    <a href="/billing" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-file-invoice"></i> Fatture
+                    </a>
+                </div>
+
+                <!-- Preferenze -->
+                <div class="card-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-cog me-2 text-primary"></i>
+                        Preferenze
+                    </h5>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="emailNotifications" 
+                               {% if current_user.email_notifications %}checked{% endif %}>
+                        <label class="form-check-label" for="emailNotifications">
+                            Notifiche Email
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="newsletter"
+                               {% if current_user.newsletter %}checked{% endif %}>
+                        <label class="form-check-label" for="newsletter">
+                            Newsletter settimanale
+                        </label>
+                    </div>
+                    <button class="btn btn-primary w-100" onclick="savePreferences()">
+                        <i class="fas fa-save"></i> Salva Preferenze
+                    </button>
+                </div>
+
+                <!-- Elimina Account -->
+                <div class="card-section border-danger">
+                    <h5 class="mb-3 text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Zona Pericolosa
+                    </h5>
+                    <p class="small text-muted">
+                        L'eliminazione dell'account è permanente e irreversibile.
+                    </p>
+                    <button class="btn btn-danger w-100" onclick="deleteAccount()">
+                        <i class="fas fa-trash"></i> Elimina Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Aggiorna profilo
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value
+            };
+            
+            try {
+                const res = await fetch('/auth/update-profile', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('alertProfile').innerHTML = 
+                        '<div class="alert alert-success">Profilo aggiornato con successo!</div>';
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    document.getElementById('alertProfile').innerHTML = 
+                        '<div class="alert alert-danger">' + result.error + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('alertProfile').innerHTML = 
+                    '<div class="alert alert-danger">Errore di connessione</div>';
+            }
+        });
+        
+        // Cambia password
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            
+            if (newPass !== confirmPass) {
+                document.getElementById('alertPassword').innerHTML = 
+                    '<div class="alert alert-danger">Le password non corrispondono</div>';
+                return;
+            }
+            
+            const data = {
+                currentPassword: document.getElementById('currentPassword').value,
+                newPassword: newPass
+            };
+            
+            try {
+                const res = await fetch('/auth/change-password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('alertPassword').innerHTML = 
+                        '<div class="alert alert-success">Password aggiornata con successo!</div>';
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    document.getElementById('alertPassword').innerHTML = 
+                        '<div class="alert alert-danger">' + result.error + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('alertPassword').innerHTML = 
+                    '<div class="alert alert-danger">Errore di connessione</div>';
+            }
+        });
+        
+        // Salva preferenze
+        async function savePreferences() {
+            const data = {
+                emailNotifications: document.getElementById('emailNotifications').checked,
+                newsletter: document.getElementById('newsletter').checked
+            };
+            
+            try {
+                const res = await fetch('/auth/update-preferences', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    alert('Preferenze salvate!');
+                }
+            } catch (error) {
+                alert('Errore nel salvare le preferenze');
+            }
+        }
+        
+        // Elimina account
+        function deleteAccount() {
+            if (confirm('Sei sicuro? Questa azione è irreversibile!')) {
+                if (confirm('ULTIMA CONFERMA: Tutti i dati verranno eliminati permanentemente.')) {
+                    fetch('/auth/delete-account', {
+                        method: 'POST'
+                    }).then(() => {
+                        alert('Account eliminato');
+                        window.location.href = '/';
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

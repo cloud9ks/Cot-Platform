@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>COT Analysis Platform - Previsioni Professionali sui Mercati</title>
+  <title>COT Analysis Platform - Analisi Professionale dei Mercati</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -17,11 +17,12 @@
     .navbar.scrolled { background: rgba(102, 126, 234, 0.95) !important; }
     .navbar-brand, .nav-link { color: white !important; font-weight: 600; }
     .nav-link:hover { color: rgba(255,255,255,0.8) !important; }
-    .navbar-toggler { border-color: rgba(255,255,255,0.3); }
-    .navbar-toggler-icon { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e"); }
+    .btn-auth { background: white; color: #667eea; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; transition: all 0.3s; margin-left: 10px; }
+    .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,255,255,0.3); }
+    .btn-auth.register { background: rgba(255,255,255,0.2); color: white; border: 2px solid white; }
 
     /* Hero Section */
-    .hero { min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; position: relative; overflow: hidden; }
+    .hero { min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; position: relative; overflow: hidden; padding-top: 80px; }
     .hero::before { content: ''; position: absolute; width: 200%; height: 200%; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff10" d="M0,96L48,112C96,128,192,160,288,165.3C384,171,480,149,576,154.7C672,160,768,192,864,197.3C960,203,1056,181,1152,165.3C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom; animation: wave 10s linear infinite; }
     @keyframes wave { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     .hero-content { position: relative; z-index: 1; }
@@ -34,16 +35,6 @@
     .btn-secondary-hero { background: transparent; color: white; border: 2px solid white; margin-left: 20px; }
     .btn-secondary-hero:hover { background: white; color: #667eea; }
 
-    /* Live Ticker */
-    .ticker { background: #1e293b; padding: 15px 0; overflow: hidden; position: fixed; top: 0; width: 100%; z-index: 1000; }
-    .ticker-content { display: flex; animation: scroll 30s linear infinite; }
-    @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-    .ticker-item { display: flex; align-items: center; margin-right: 50px; white-space: nowrap; color: white; }
-    .ticker-item .symbol { font-weight: bold; margin-right: 10px; }
-    .ticker-item .price { margin-right: 10px; }
-    .ticker-item .change-up { color: #10b981; }
-    .ticker-item .change-down { color: #ef4444; }
-
     /* Features Section */
     .features { padding: 100px 0; background: #f8f9fa; }
     .feature-card { background: white; border-radius: 20px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: transform 0.3s; height: 100%; }
@@ -55,22 +46,17 @@
     .stat-item { text-align: center; }
     .stat-number { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-    /* CTA Section */
-    .cta { padding: 100px 0; background: linear-gradient(135deg, #667eea, #764ba2); text-align: center; color: white; }
-    .cta h2 { font-size: 3rem; margin-bottom: 20px; }
-
-    /* Newsletter Section */
+    /* Newsletter */
     .newsletter { padding: 80px 0; background: white; text-align: center; }
-    .newsletter-form { max-width: 500px; margin: 0 auto; display: flex; gap: 15px; margin-top: 30px; }
+    .newsletter-form { max-width: 500px; margin: 30px auto 0; display: flex; gap: 15px; }
     .newsletter-form .form-control { border-radius: 50px; border: 2px solid #e2e8f0; padding: 15px 25px; }
     .newsletter-form .btn { border-radius: 50px; padding: 15px 30px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; white-space: nowrap; }
 
     /* Footer */
     footer { background: #1e293b; color: white; padding: 50px 0 30px; }
-    .footer-links a { color: #94a3b8; text-decoration: none; margin-right: 20px; transition: color 0.3s; }
+    .footer-links a { color: #94a3b8; text-decoration: none; transition: color 0.3s; display: block; margin-bottom: 8px; }
     .footer-links a:hover { color: white; }
 
-    /* Responsive */
     @media (max-width: 768px) {
       .hero h1 { font-size: 2.5rem; }
       .btn-secondary-hero { margin-left: 0; margin-top: 15px; }
@@ -79,44 +65,8 @@
   </style>
 </head>
 <body>
-  <!-- Live Ticker -->
-  <div class="ticker">
-    <div class="ticker-content">
-      <div class="ticker-item">
-        <span class="symbol">GOLD</span>
-        <span class="price">$2,043.50</span>
-        <span class="change-up">▲ +0.45%</span>
-      </div>
-      <div class="ticker-item">
-        <span class="symbol">USD INDEX</span>
-        <span class="price">103.245</span>
-        <span class="change-down">▼ -0.12%</span>
-      </div>
-      <div class="ticker-item">
-        <span class="symbol">EUR/USD</span>
-        <span class="price">1.0875</span>
-        <span class="change-up">▲ +0.23%</span>
-      </div>
-      <div class="ticker-item">
-        <span class="symbol">GBP/USD</span>
-        <span class="price">1.2634</span>
-        <span class="change-up">▲ +0.15%</span>
-      </div>
-      <div class="ticker-item">
-        <span class="symbol">SILVER</span>
-        <span class="price">$24.32</span>
-        <span class="change-down">▼ -0.08%</span>
-      </div>
-      <div class="ticker-item">
-        <span class="symbol">WTI OIL</span>
-        <span class="price">$78.45</span>
-        <span class="change-up">▲ +1.2%</span>
-      </div>
-    </div>
-  </div>
-
   <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg fixed-top" style="top: 45px;">
+  <nav class="navbar navbar-expand-lg fixed-top">
     <div class="container">
       <a class="navbar-brand" href="/">
         <i class="fas fa-chart-line"></i> COT Analysis
@@ -125,13 +75,22 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
+        <ul class="navbar-nav ms-auto align-items-center">
           <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
-          <li class="nav-item"><a class="nav-link" href="/features.html">Funzionalità</a></li>
-          <li class="nav-item"><a class="nav-link" href="/pricing.html">Abbonamenti</a></li>
-          <li class="nav-item"><a class="nav-link" href="/about.html">Chi Siamo</a></li>
-          <li class="nav-item"><a class="nav-link" href="/contact.html">Contatti</a></li>
-          <li class="nav-item"><a class="nav-link btn btn-outline-light px-3 ms-2" href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/features">Funzionalità</a></li>
+          <li class="nav-item"><a class="nav-link" href="/pricing">Abbonamenti</a></li>
+          <li class="nav-item"><a class="nav-link" href="/about">Chi Siamo</a></li>
+          <li class="nav-item"><a class="nav-link" href="/contact">Contatti</a></li>
+          <li class="nav-item">
+            <a href="/login" class="btn btn-auth">
+              <i class="fas fa-sign-in-alt"></i> Accedi
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/register" class="btn btn-auth register">
+              <i class="fas fa-user-plus"></i> Registrati
+            </a>
+          </li>
         </ul>
       </div>
     </div>
@@ -140,26 +99,25 @@
   <!-- Hero Section -->
   <section class="hero">
     <div class="container">
-      <div class="row align-items-center min-vh-100">
+      <div class="row align-items-center">
         <div class="col-lg-6 hero-content">
           <h1>COT Analysis Platform</h1>
-          <p>Previsioni professionali sui mercati finanziari con AI avanzata e analisi COT in tempo reale. Migliora le tue decisioni di trading con l'intelligenza artificiale.</p>
+          <p>Analisi professionale dei mercati finanziari con AI e Machine Learning. Semplifica le tue decisioni di trading con dati COT certificati CFTC.</p>
           <div class="d-flex flex-wrap gap-3">
-            <a href="/pricing.html" class="btn-hero btn-primary-hero"><i class="fas fa-rocket"></i> Inizia Gratis</a>
+            <a href="/register" class="btn-hero btn-primary-hero"><i class="fas fa-rocket"></i> Inizia Trial Gratuito</a>
             <a href="#features" class="btn-hero btn-secondary-hero"><i class="fas fa-info-circle"></i> Scopri di Più</a>
           </div>
           <div class="mt-5">
             <small class="text-white-50">
               <i class="fas fa-shield-alt"></i> Dati certificati CFTC
               <span class="mx-3">|</span>
-              <i class="fas fa-robot"></i> Powered by GPT-4
+              <i class="fas fa-robot"></i> Powered by AI & ML
               <span class="mx-3">|</span>
-              <i class="fas fa-users"></i> 10K+ utenti attivi
+              <i class="fas fa-users"></i> 100+ utenti attivi
             </small>
           </div>
         </div>
         <div class="col-lg-6">
-          <!-- Trading Chart Placeholder -->
           <div style="position: relative; height: 400px; display: flex; align-items: center; justify-content: center;">
             <div style="text-align: center; color: white;">
               <i class="fas fa-chart-area" style="font-size: 8rem; opacity: 0.3; margin-bottom: 20px;"></i>
@@ -182,57 +140,50 @@
       <div class="row g-4">
         <div class="col-md-4">
           <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-brain"></i></div>
+            <h4>Intelligenza Artificiale</h4>
+            <p>Analisi predittive con Machine Learning per previsioni accurate sui movimenti di mercato</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+            <h4>Dati COT Real-Time</h4>
+            <p>Aggiornamenti automatici ogni martedì con dati certificati CFTC</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
             <div class="feature-icon"><i class="fas fa-chart-bar"></i></div>
             <h4>Grafici Interattivi</h4>
-            <p>Visualizzazioni avanzate con TradingView e analisi multi-timeframe per decisioni informate</p>
-            <a href="/features.html#charts" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+            <p>Visualizzazioni avanzate con analisi multi-timeframe per decisioni informate</p>
           </div>
         </div>
         <div class="col-md-4">
           <div class="feature-card">
             <div class="feature-icon"><i class="fas fa-globe"></i></div>
             <h4>Multi-Asset</h4>
-            <p>Analisi su Forex, Commodities, Indici e correlazioni cross-market per un trading diversificato</p>
-            <a href="/features.html#assets" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+            <p>Analisi su Forex, Commodities, Indici e correlazioni cross-market</p>
           </div>
         </div>
         <div class="col-md-4">
           <div class="feature-card">
-            <div class="feature-icon"><i class="fas fa-bell"></i></div>
-            <h4>Alert Personalizzati</h4>
-            <p>Notifiche istantanee su movimenti significativi e segnali di trading via email e SMS</p>
-            <a href="/features.html#alerts" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="feature-card">
-            <div class="feature-icon"><i class="fas fa-history"></i></div>
-            <h4>Backtesting</h4>
-            <p>Verifica l'accuratezza storica delle previsioni con metriche dettagliate di performance</p>
-            <a href="/features.html#backtesting" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
-          </div>
-        </div>
-        <!-- Ripristino card mancanti -->
-        <div class="col-md-4">
-          <div class="feature-card">
-            <div class="feature-icon"><i class="fas fa-brain"></i></div>
-            <h4>Intelligenza Artificiale</h4>
-            <p>Analisi predittive con GPT-4 e Machine Learning per previsioni accurate sui movimenti di mercato</p>
-            <a href="/features.html#ai" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+            <div class="feature-icon"><i class="fas fa-download"></i></div>
+            <h4>Export Dati</h4>
+            <p>Esporta i dati in CSV/Excel per analisi personalizzate</p>
           </div>
         </div>
         <div class="col-md-4">
           <div class="feature-card">
             <div class="feature-icon"><i class="fas fa-sync-alt"></i></div>
-            <h4>Dati Real-Time</h4>
-            <p>Aggiornamenti automatici COT ogni martedì con analisi istantanea e alert personalizzati</p>
-            <a href="/features.html#realtime" class="btn btn-outline-primary btn-sm mt-3">Scopri di più</a>
+            <h4>Aggiornamento Automatico</h4>
+            <p>Sistema di scraping automatico che aggiorna i dati ogni settimana</p>
           </div>
         </div>
       </div>
 
       <div class="text-center mt-5">
-        <a href="/features.html" class="btn btn-primary btn-lg px-5"><i class="fas fa-eye"></i> Vedi Tutte le Funzionalità</a>
+        <a href="/features" class="btn btn-primary btn-lg px-5"><i class="fas fa-eye"></i> Vedi Tutte le Funzionalità</a>
       </div>
     </div>
   </section>
@@ -243,14 +194,14 @@
       <div class="row">
         <div class="col-md-3">
           <div class="stat-item">
-            <div class="stat-number" data-target="85">0</div>
-            <p>% Accuratezza Previsioni</p>
+            <div class="stat-number">100+</div>
+            <p>Utenti Attivi</p>
           </div>
         </div>
         <div class="col-md-3">
           <div class="stat-item">
-            <div class="stat-number" data-target="15">0</div>
-            <p>+ Asset Monitorati</p>
+            <div class="stat-number">15+</div>
+            <p>Asset Monitorati</p>
           </div>
         </div>
         <div class="col-md-3">
@@ -261,8 +212,8 @@
         </div>
         <div class="col-md-3">
           <div class="stat-item">
-            <div class="stat-number" data-target="10000">0</div>
-            <p>+ Utenti Attivi</p>
+            <div class="stat-number">2024</div>
+            <p>Anno di Fondazione</p>
           </div>
         </div>
       </div>
@@ -281,13 +232,14 @@
         <div class="col-lg-3 col-md-6">
           <div class="feature-card text-center" style="border: 2px solid transparent;">
             <h5>Starter</h5>
-            <div class="display-6 fw-bold text-primary mb-3">€0<small class="fs-6">/mese</small></div>
-            <ul class="list-unstyled">
-              <li class="mb-2"><i class="fas fa-check text-success me-2"></i>3 asset monitorati</li>
-              <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Dati COT base</li>
+            <div class="display-6 fw-bold text-primary mb-3">€12.99<small class="fs-6">/mese</small></div>
+            <p class="small text-muted">1 mese di prova gratuita</p>
+            <ul class="list-unstyled text-start">
+              <li class="mb-2"><i class="fas fa-check text-success me-2"></i>5 asset monitorati</li>
+              <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Dati COT settimanali</li>
               <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Grafici interattivi</li>
             </ul>
-            <a href="/pricing.html" class="btn btn-outline-primary">Inizia Gratis</a>
+            <a href="/register" class="btn btn-outline-primary mt-3">Inizia Trial</a>
           </div>
         </div>
 
@@ -296,12 +248,13 @@
             <div class="badge bg-primary mb-2">PIÙ POPOLARE</div>
             <h5>Professional</h5>
             <div class="display-6 fw-bold text-primary mb-3">€49<small class="fs-6">/mese</small></div>
-            <ul class="list-unstyled">
+            <p class="small text-muted">&nbsp;</p>
+            <ul class="list-unstyled text-start">
               <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Tutti gli asset</li>
               <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Previsioni AI</li>
               <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Alert intelligenti</li>
             </ul>
-            <a href="/pricing.html" class="btn btn-primary">Prova 30 Giorni Gratis</a>
+            <a href="/register" class="btn btn-primary mt-3">Acquista Ora</a>
           </div>
         </div>
 
@@ -309,44 +262,33 @@
           <div class="feature-card text-center" style="border: 2px solid transparent;">
             <h5>Enterprise</h5>
             <div class="display-6 fw-bold text-primary mb-3">€199<small class="fs-6">/mese</small></div>
-            <ul class="list-unstyled">
+            <p class="small text-muted">&nbsp;</p>
+            <ul class="list-unstyled text-start">
               <li class="mb-2"><i class="fas fa-check text-success me-2"></i>API dedicata</li>
               <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Team multipli</li>
-              <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Support 24/7</li>
+              <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Support prioritario</li>
             </ul>
-            <a href="/contact.html?enterprise=true" class="btn btn-outline-primary">Contattaci</a>
+            <a href="/contact" class="btn btn-outline-primary mt-3">Contattaci</a>
           </div>
         </div>
       </div>
 
       <div class="text-center mt-4">
-        <a href="/pricing.html" class="btn btn-link">Confronta tutti i piani <i class="fas fa-arrow-right"></i></a>
+        <a href="/pricing" class="btn btn-link">Confronta tutti i piani <i class="fas fa-arrow-right"></i></a>
       </div>
     </div>
   </section>
 
-  <!-- Newsletter Section -->
+  <!-- Newsletter -->
   <section class="newsletter">
     <div class="container">
       <h2 class="display-6 fw-bold">Resta Aggiornato</h2>
-      <p class="lead text-muted">Ricevi analisi di mercato settimanali e aggiornamenti sulla piattaforma</p>
-      <form class="newsletter-form">
+      <p class="lead text-muted">Ricevi analisi di mercato settimanali e aggiornamenti</p>
+      <form class="newsletter-form" id="newsletterForm">
         <input type="email" class="form-control" placeholder="La tua email" required />
         <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Iscriviti</button>
       </form>
-      <small class="text-muted mt-3 d-block"><i class="fas fa-shield-alt"></i> I tuoi dati sono al sicuro. Niente spam, solo contenuti di valore.</small>
-    </div>
-  </section>
-
-  <!-- CTA Section -->
-  <section class="cta">
-    <div class="container">
-      <h2>Inizia Ora la Tua Analisi Professionale</h2>
-      <p class="lead mb-4">Unisciti a oltre 10.000 trader che già utilizzano le nostre analisi</p>
-      <div class="d-flex gap-3 justify-content-center flex-wrap">
-        <a href="/pricing.html" class="btn btn-light btn-lg px-5"><i class="fas fa-rocket"></i> Prova Gratuita 30 Giorni</a>
-        <a href="/contact.html" class="btn btn-outline-light btn-lg px-5"><i class="fas fa-comments"></i> Parla con un Esperto</a>
-      </div>
+      <small class="text-muted mt-3 d-block"><i class="fas fa-shield-alt"></i> I tuoi dati sono al sicuro. Niente spam.</small>
     </div>
   </section>
 
@@ -355,80 +297,57 @@
     <div class="container">
       <div class="row">
         <div class="col-md-4 mb-4">
-          <h5><i class="fas fa-chart-line"></i> COT Analysis Platform</h5>
-          <p class="text-muted">La piattaforma professionale per l'analisi dei mercati finanziari con intelligenza artificiale e dati COT certificati.</p>
-          <div class="social-links mt-3">
-            <a href="#" class="text-muted me-3"><i class="fab fa-linkedin"></i></a>
-            <a href="#" class="text-muted me-3"><i class="fab fa-twitter"></i></a>
-            <a href="#" class="text-muted me-3"><i class="fab fa-youtube"></i></a>
-            <a href="#" class="text-muted"><i class="fab fa-telegram"></i></a>
-          </div>
+          <h5><i class="fas fa-chart-line"></i> COT Analysis</h5>
+          <p class="text-muted">La piattaforma integrata per l'analisi dei mercati finanziari con intelligenza artificiale e machine learning.</p>
         </div>
         <div class="col-md-2 mb-4">
           <h6 class="text-white">Prodotto</h6>
           <div class="footer-links">
-            <a href="/features.html">Funzionalità</a><br />
-            <a href="/pricing.html">Prezzi</a><br />
-            <a href="/api.html">API</a><br />
-            <a href="/integrations.html">Integrazioni</a>
+            <a href="/features">Funzionalità</a>
+            <a href="/pricing">Prezzi</a>
           </div>
         </div>
         <div class="col-md-2 mb-4">
           <h6 class="text-white">Azienda</h6>
           <div class="footer-links">
-            <a href="/about.html">Chi Siamo</a><br />
-            <a href="/contact.html">Contatti</a><br />
-            <a href="/careers.html">Carriere</a><br />
-            <a href="/press.html">Stampa</a>
+            <a href="/about">Chi Siamo</a>
+            <a href="/contact">Contatti</a>
           </div>
         </div>
         <div class="col-md-2 mb-4">
           <h6 class="text-white">Legale</h6>
           <div class="footer-links">
-            <a href="/privacy.html">Privacy Policy</a><br />
-            <a href="/terms.html">Termini di Servizio</a><br />
-            <a href="/disclaimer.html">Disclaimer</a><br />
-            <a href="/cookies.html">Cookie Policy</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Termini</a>
+            <a href="/disclaimer">Disclaimer</a>
           </div>
         </div>
         <div class="col-md-2 mb-4">
-          <h6 class="text-white">Supporto</h6>
+          <h6 class="text-white">Support</h6>
           <div class="footer-links">
-            <a href="/help.html">Centro Aiuto</a><br />
-            <a href="/tutorials.html">Tutorial</a><br />
-            <a href="/webinars.html">Webinar</a><br />
-            <a href="/status.html">Stato Servizi</a>
+            <a href="/help">Centro Aiuto</a>
+            <a href="/tutorials">Tutorial</a>
           </div>
         </div>
       </div>
       <hr class="my-4 border-secondary" />
-      <div class="row align-items-center">
-        <div class="col-md-6">
-          <small class="text-muted">&copy; 2024 COT Analysis Platform. Tutti i diritti riservati.</small>
-        </div>
-        <div class="col-md-6 text-md-end">
-          <small class="text-muted">
-            <i class="fas fa-shield-alt text-success"></i> Dati certificati CFTC |
-            <i class="fas fa-lock text-success"></i> Sicurezza bancaria |
-            <i class="fas fa-chart-line text-success"></i> 85% accuratezza
-          </small>
-        </div>
+      <div class="text-center text-muted">
+        <small>&copy; 2024-2025 COT Analysis Platform. Tutti i diritti riservati.</small>
       </div>
     </div>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
   <script>
-    // Smooth scroll per ancore (solo per target validi)
+    // Smooth scroll
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
         const href = this.getAttribute('href');
-        if (!href || href === '#') return; // non bloccare link vuoti
+        if (!href || href === '#') return;
         const target = document.querySelector(href);
         if (target) {
           e.preventDefault();
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          target.scrollIntoView({ behavior: 'smooth' });
         }
       });
     });
@@ -443,131 +362,21 @@
       }
     });
 
-    // Update ticker prices (simulazione real-time)
-    setInterval(() => {
-      document.querySelectorAll('.ticker-item').forEach(item => {
-        const priceEl = item.querySelector('.price');
-        const changeEl = item.querySelector('.change-up, .change-down');
-        if (!priceEl || !changeEl) return;
-
-        // Ottieni numero attuale rimuovendo simboli non numerici tranne punto
-        const numeric = parseFloat(priceEl.textContent.replace(/[^0-9.\-]/g, ''));
-        if (isNaN(numeric)) return;
-
-        // Simula variazione ±1%
-        const variation = (Math.random() - 0.5) * 0.02;
-        const newPrice = numeric * (1 + variation);
-
-        // Formattazione: se contiene $, usa 2 decimali, altrimenti 3
-        const isCurrency = /\$/.test(priceEl.textContent);
-        const formatted = isCurrency ? '$' + newPrice.toFixed(2) : newPrice.toFixed(3);
-        priceEl.textContent = formatted;
-
-        // Aggiorna direzione e testo variazione
-        const cls = variation > 0 ? 'change-up' : 'change-down';
-        changeEl.className = cls;
-        const pct = (variation * 100).toFixed(2);
-        changeEl.textContent = (variation > 0 ? '▲ +' : '▼ ') + pct + '%';
-      });
-    }, 5000);
-
-    // Animated counters
-    function animateCounter(element, target, duration = 2000) {
-      let start = 0;
-      const increment = target / (duration / 16);
-      function updateCounter() {
-        start += increment;
-        if (start < target) {
-          element.textContent = Math.floor(start);
-          requestAnimationFrame(updateCounter);
-        } else {
-          element.textContent = target;
-        }
-      }
-      updateCounter();
-    }
-
-    // Intersection Observer per animazioni
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          if (entry.target.classList.contains('stat-number') && entry.target.dataset.target && !entry.target.dataset.animated) {
-            const target = parseInt(entry.target.dataset.target, 10);
-            animateCounter(entry.target, target);
-            entry.target.dataset.animated = 'true';
-          } else {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }
-        }
-      });
-    }, { threshold: 0.1 });
-
-    // Applica observer agli elementi
-    document.querySelectorAll('.feature-card, .stat-number').forEach(el => {
-      if (!el.classList.contains('stat-number')) {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = 'all 0.6s ease';
-      }
-      observer.observe(el);
-    });
-
-    // Newsletter form
-    document.querySelector('.newsletter-form').addEventListener('submit', function(e) {
+    // Newsletter
+    document.getElementById('newsletterForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      const email = this.querySelector('input[type="email"]').value.trim();
+      const email = this.querySelector('input[type="email"]').value;
       const btn = this.querySelector('button');
-      if (!email) return;
-
+      
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrazione...';
       btn.disabled = true;
-
-      // Simula invio
+      
       setTimeout(() => {
-        alert('Grazie! Ti sei iscritto alla newsletter con successo.');
+        alert('Grazie! Ti sei iscritto alla newsletter.');
         this.reset();
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Iscriviti';
         btn.disabled = false;
       }, 1500);
-    });
-
-    // Parallax effect per hero (leggero)
-    window.addEventListener('scroll', () => {
-      const scrolled = window.pageYOffset;
-      const hero = document.querySelector('.hero');
-      const rate = scrolled * -0.5;
-      if (hero && scrolled < hero.offsetHeight) {
-        hero.style.transform = `translateY(${rate}px)`;
-      }
-    });
-
-    // Feature cards hover effect enhancement
-    document.querySelectorAll('.feature-card').forEach(card => {
-      card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-15px)';
-        this.style.boxShadow = '0 20px 40px rgba(0,0,0,0.15)';
-      });
-      card.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0)';
-        this.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
-      });
-    });
-
-    // Auto-hide ticker on mobile scroll down
-    let lastScrollTop = 0;
-    window.addEventListener('scroll', () => {
-      if (window.innerWidth <= 768) {
-        const st = window.pageYOffset || document.documentElement.scrollTop;
-        const ticker = document.querySelector('.ticker');
-        if (!ticker) return;
-        if (st > lastScrollTop && st > 100) {
-          ticker.style.transform = 'translateY(-100%)';
-        } else {
-          ticker.style.transform = 'translateY(0)';
-        }
-        lastScrollTop = st <= 0 ? 0 : st;
-      }
     });
   </script>
 </body>
