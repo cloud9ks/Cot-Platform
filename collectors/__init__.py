@@ -1,14 +1,7 @@
 """
-Collectors Module
-Moduli per la raccolta dati COT
+Collectors package - Scraping dati COT
 """
 
-from .cot_scraper import COTScraper, scrape_symbol, scrape_all_symbols
-from .data_processor import COTDataProcessor
+from .cot_scraper import COTScraper
 
-__all__ = [
-    'COTScraper',
-    'scrape_symbol', 
-    'scrape_all_symbols',
-    'COTDataProcessor'
-]
+__all__ = ['COTScraper']
