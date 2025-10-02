@@ -397,7 +397,31 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        let selectedPlan = 'professional'; // Piano di default
+        let selectedPlan = 'starter'; // Piano di default
+        
+        // Aggiorna prezzi corretti
+        const PLANS = {
+            'starter': {
+                name: 'Starter',
+                price: 12.99,
+                trial: 30,
+                features: {
+                    assets: 5,
+                    ai: false,
+                    alerts: false
+                }
+            },
+            'professional': {
+                name: 'Professional',
+                price: 49.00,
+                trial: 0,
+                features: {
+                    assets: -1,
+                    ai: true,
+                    alerts: true
+                }
+            }
+        };
         
         // Gestione selezione piano
         document.querySelectorAll('.plan-option').forEach(option => {
@@ -416,15 +440,26 @@
         function updateUIForPlan(plan) {
             const btnText = document.getElementById('btnText');
             const trialInfo = document.getElementById('trialInfo');
+            const planData = PLANS[plan];
+            
+            if (!planData) return;
             
             switch(plan) {
                 case 'starter':
-                    btnText.textContent = 'Crea Account Gratuito';
-                    trialInfo.style.display = 'none';
+                    btnText.textContent = 'Crea Account con Trial Gratuito';
+                    trialInfo.style.display = 'block';
+                    trialInfo.innerHTML = `
+                        <i class="fas fa-gift"></i>
+                        <strong>${planData.trial} giorni di prova gratuita</strong> poi €${planData.price}/mese
+                    `;
                     break;
                 case 'professional':
-                    btnText.textContent = 'Inizia Prova Gratuita';
+                    btnText.textContent = 'Procedi al Pagamento';
                     trialInfo.style.display = 'block';
+                    trialInfo.innerHTML = `
+                        <i class="fas fa-credit-card"></i>
+                        <strong>€${planData.price}/mese</strong> - Accesso immediato a tutte le funzioni
+                    `;
                     break;
                 case 'enterprise':
                     btnText.textContent = 'Richiedi Consulenza';
@@ -482,28 +517,22 @@
                 
                 const result = await response.json();
                 
-                if (response.ok) {
-                    showAlert('Account creato con successo! Reindirizzamento in corso...', 'success');
+                if (response.ok && result.success) {
+                    showAlert(result.message || 'Account creato con successo!', 'success');
                     
-                    // Reindirizza dopo 2 secondi
+                    // Reindirizza dopo 1.5 secondi
                     setTimeout(() => {
-                        if (selectedPlan === 'starter') {
-                            window.location.href = '/dashboard';
-                        } else if (selectedPlan === 'enterprise') {
-                            window.location.href = '/contact.html?enterprise=true';
-                        } else {
-                            window.location.href = '/dashboard'; // Professional con trial
-                        }
-                    }, 2000);
+                        window.location.href = result.redirect;
+                    }, 1500);
                 } else {
                     showAlert(result.error || 'Errore nella registrazione', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
                 
             } catch (error) {
                 showAlert('Errore di connessione. Riprova più tardi.', 'error');
                 console.error('Registration error:', error);
-            } finally {
-                // Ripristina pulsante
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             }
@@ -550,10 +579,15 @@
                 </div>
             `;
             
-            // Auto-hide dopo 5 secondi
-            setTimeout(() => {
-                alertContainer.innerHTML = '';
-            }, 5000);
+            // Scroll verso l'alert
+            alertContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Auto-hide dopo 5 secondi (solo per errori)
+            if (type === 'error') {
+                setTimeout(() => {
+                    alertContainer.innerHTML = '';
+                }, 5000);
+            }
         }
         
         // Auto-selezione piano da URL
@@ -562,9 +596,12 @@
         
         if (planFromUrl && ['starter', 'professional', 'enterprise'].includes(planFromUrl)) {
             document.querySelectorAll('.plan-option').forEach(opt => opt.classList.remove('selected'));
-            document.querySelector(`[data-plan="${planFromUrl}"]`).classList.add('selected');
-            selectedPlan = planFromUrl;
-            updateUIForPlan(selectedPlan);
+            const planElement = document.querySelector(`[data-plan="${planFromUrl}"]`);
+            if (planElement) {
+                planElement.classList.add('selected');
+                selectedPlan = planFromUrl;
+                updateUIForPlan(selectedPlan);
+            }
         }
         
         // Validazione in tempo reale
@@ -572,20 +609,24 @@
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (this.value && !emailRegex.test(this.value)) {
                 this.classList.add('is-invalid');
-            } else {
+                this.classList.remove('is-valid');
+            } else if (this.value) {
                 this.classList.remove('is-invalid');
                 this.classList.add('is-valid');
             }
         });
         
         document.getElementById('password').addEventListener('input', function() {
-            const strength = checkPasswordStrength(this.value);
             const confirmInput = document.getElementById('confirmPassword');
             
-            // Aggiorna classe per forza password
-            this.className = this.className.replace(/password-\w+/g, '');
-            if (this.value) {
-                this.classList.add(`password-${strength.level}`);
+            // Rimuovi classi precedenti
+            this.classList.remove('is-valid', 'is-invalid');
+            
+            // Valida lunghezza
+            if (this.value.length >= 8) {
+                this.classList.add('is-valid');
+            } else if (this.value.length > 0) {
+                this.classList.add('is-invalid');
             }
             
             // Re-valida conferma password se presente
@@ -594,96 +635,8 @@
             }
         });
         
-        function checkPasswordStrength(password) {
-            let score = 0;
-            let level = 'weak';
-            
-            if (password.length >= 8) score++;
-            if (password.match(/[a-z]/)) score++;
-            if (password.match(/[A-Z]/)) score++;
-            if (password.match(/[0-9]/)) score++;
-            if (password.match(/[^a-zA-Z0-9]/)) score++;
-            
-            if (score >= 4) level = 'strong';
-            else if (score >= 3) level = 'medium';
-            
-            return { score, level };
-        }
-        
-        // Animazione di ingresso
-        document.addEventListener('DOMContentLoaded', function() {
-            const card = document.querySelector('.register-card');
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            card.style.transition = 'all 0.6s ease';
-            
-            setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, 100);
-        });
-        
-        // Simulazione controllo email esistente (debounced)
-        let emailCheckTimeout;
-        document.getElementById('email').addEventListener('input', function() {
-            clearTimeout(emailCheckTimeout);
-            const email = this.value;
-            
-            if (email && email.includes('@')) {
-                emailCheckTimeout = setTimeout(async () => {
-                    // Qui faresti una chiamata API per verificare se l'email esiste
-                    // Simulazione per ora
-                    if (email === 'test@example.com') {
-                        showAlert('Questa email è già registrata. <a href="/login.html">Accedi qui</a>', 'error');
-                    }
-                }, 1000);
-            }
-        });
-        
-        // Gestione focus per migliorare UX
-        document.querySelectorAll('.form-control').forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.classList.add('focused');
-            });
-            
-            input.addEventListener('blur', function() {
-                this.parentElement.classList.remove('focused');
-            });
-        });
-        
-        // Analisi form completion per ottimizzazione
-        const formFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
-        let completionTracking = {};
-        
-        formFields.forEach(fieldName => {
-            const field = document.getElementById(fieldName);
-            if (field) {
-                field.addEventListener('blur', function() {
-                    if (this.value.trim()) {
-                        completionTracking[fieldName] = Date.now();
-                    }
-                });
-            }
-        });
-        
-        // Track form abandonment
-        let formStarted = false;
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('focus', function() {
-                if (!formStarted) {
-                    formStarted = true;
-                    console.log('Form started at:', new Date());
-                }
-            }, { once: true });
-        });
-        
-        window.addEventListener('beforeunload', function() {
-            if (formStarted) {
-                const completedFields = Object.keys(completionTracking).length;
-                console.log('Form abandoned - completed fields:', completedFields);
-                // Qui potresti inviare analytics
-            }
-        });
+        // Inizializza UI con piano default
+        updateUIForPlan(selectedPlan);
     </script>
     
     <style>

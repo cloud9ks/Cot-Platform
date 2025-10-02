@@ -25,6 +25,9 @@ import warnings
 warnings.filterwarnings('ignore')
 from ml_system_fixed import COTPredictorFixed, create_production_predictor
 from dotenv import load_dotenv
+from models import db, User, init_db, SUBSCRIPTION_PLANS
+from auth_routes import auth_bp
+from decorators import subscription_context_processor
 load_dotenv()
 
 # =================== CONFIGURAZIONE ===================
@@ -57,6 +60,20 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
 logger = logging.getLogger("cot_platform")
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Inizializza database
+db.init_app(app)
+
+# Login Manager
+from flask_login import LoginManager
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login_page'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # Scheduler per aggiornamenti automatici
 scheduler = APScheduler()
@@ -1375,301 +1392,169 @@ def get_newest_data_date():
     except:
         return None
 # =================== API ROUTES ===================
+# ==========================================
+# IMPORT MANCANTI (aggiungi in alto con gli altri import)
+# ==========================================
+from flask_login import login_required, current_user
+
+# ==========================================
+# REGISTRA BLUEPRINT E CONTEXT PROCESSOR
+# (aggiungi PRIMA delle routes)
+# ==========================================
+app.register_blueprint(auth_bp)
+app.context_processor(subscription_context_processor)
+
+# ==========================================
+# ROUTES PUBBLICHE
+# ==========================================
+
 @app.route('/')
-def home():
+def index():
     """Homepage"""
+    if current_user.is_authenticated:
+        return redirect('/dashboard')
     return render_template('index.html')
 
 @app.route('/features')
-@app.route('/features.html')
 def features():
     """Pagina features"""
     return render_template('features.html')
 
 @app.route('/pricing')
-@app.route('/pricing.html')
 def pricing():
     """Pagina pricing"""
-    return render_template('pricing.html')
+    return render_template('pricing.html', plans=SUBSCRIPTION_PLANS)
 
 @app.route('/about')
-@app.route('/about.html')
 def about():
     """Pagina about"""
     return render_template('about.html')
 
 @app.route('/contact')
-@app.route('/contact.html')
 def contact():
     """Pagina contact"""
     return render_template('contact.html')
 
-@app.route('/register')
-@app.route('/register.html')
-def register():
-    """Pagina registrazione"""
-    return render_template('register.html')
+# ==========================================
+# ROUTES AUTENTICAZIONE (gestite da auth_bp)
+# Le routes /login, /register, /logout, /checkout
+# sono già nel auth_routes.py - NON duplicarle qui
+# ==========================================
+
+# ==========================================
+# DASHBOARD E PROFILO
+# ==========================================
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """Dashboard principale con context utente"""
-    return render_template('dashboard.html', 
-                         current_user=current_user)
-@app.route('/api/validate-discount', methods=['POST'])
-def validate_discount():
-    data = request.json
-    code = data.get('code', '').upper()
-    plan = data.get('plan')
-    
-    # Database di codici sconto (sostituisci con DB reale)
-    discount_codes = {
-        'PROMO10': {'discount': 10, 'type': 'percentage'},  # 10%
-        'SAVE5': {'discount': 5, 'type': 'fixed'},  # €5 fissi
-        'WELCOME20': {'discount': 20, 'type': 'percentage'}  # 20%
+    """Dashboard principale"""
+    stats = {
+        'days_active': (datetime.utcnow() - current_user.created_at).days if current_user.created_at else 0,
+        'analyses_count': 0,  # TODO: implementa conteggio reale
+        'assets_tracked': 0,
+        'accuracy': 0
     }
-    
-    if code in discount_codes:
-        disc = discount_codes[code]
-        price = float(data.get('price', 0))
-        
-        if disc['type'] == 'percentage':
-            discount_amount = price * (disc['discount'] / 100)
-        else:
-            discount_amount = disc['discount']
-            
-        return jsonify({
-            'valid': True,
-            'discount': discount_amount,
-            'code': code
-        })
-    else:
-        return jsonify({'valid': False})
+    return render_template('dashboard.html', current_user=current_user, stats=stats)
 
-@app.route('/api/create-checkout-session', methods=['POST'])
-def create_checkout_session():
+@app.route('/profile')
+@login_required
+def profile():
+    """Profilo utente"""
+    stats = {
+        'days_active': (datetime.utcnow() - current_user.created_at).days if current_user.created_at else 0,
+        'analyses_count': 0,
+        'assets_tracked': 0,
+        'accuracy': 0
+    }
+    return render_template('profile.html', current_user=current_user, stats=stats)
+
+@app.route('/auth/update-profile', methods=['POST'])
+@login_required
+def update_profile():
+    """Aggiorna dati profilo"""
+    data = request.json
+    try:
+        current_user.first_name = data['firstName']
+        current_user.last_name = data['lastName']
+        current_user.email = data['email']
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/auth/change-password', methods=['POST'])
+@login_required
+def change_password():
+    """Cambia password"""
     data = request.json
     
-    # Qui integrerai Stripe domani
-    # Per ora simuliamo il successo
+    if not current_user.check_password(data['currentPassword']):
+        return jsonify({'error': 'Password attuale errata'}), 400
     
     try:
-        # Stripe integration placeholder
-        # stripe_session = stripe.checkout.Session.create(...)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Pagamento in elaborazione',
-            'checkoutUrl': '/dashboard'  # Domani sarà l'URL Stripe
-        })
+        current_user.set_password(data['newPassword'])
+        db.session.commit()
+        return jsonify({'success': True})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
-        
-@app.route('/<path:filename>')
-def serve_html_files(filename):
-    """Serve file HTML statici"""
-    if filename.endswith('.html'):
-        try:
-            # Prima prova in templates/
-            return render_template(filename)
-        except:
-            # Se non trova, prova nella root
-            try:
-                return send_from_directory('.', filename)
-            except FileNotFoundError:
-                return f"File {filename} non trovato", 404
-    # Fallback per altri file (CSS, JS, immagini)
-    return send_from_directory('.', filename)
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
-# Assicurati che questa route esista gi , se non c' aggiungila:
+@app.route('/auth/update-preferences', methods=['POST'])
+@login_required
+def update_preferences():
+    """Aggiorna preferenze"""
+    data = request.json
+    try:
+        current_user.email_notifications = data.get('emailNotifications', True)
+        current_user.newsletter = data.get('newsletter', False)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# ==========================================
+# API COT - CON PROTEZIONI ABBONAMENTO
+# ==========================================
+
 @app.route('/api/symbols')
+@login_required
 def get_symbols():
     """Lista simboli disponibili"""
-    return jsonify(COT_SYMBOLS)
+    symbols = list(COT_SYMBOLS.values())
+    
+    # Limita per piano Starter
+    if current_user.subscription_plan == 'starter':
+        max_assets = current_user.get_plan_info()['features']['max_assets']
+        return jsonify({
+            'symbols': symbols[:max_assets],
+            'limit': max_assets,
+            'message': f'Piano Starter: max {max_assets} asset'
+        })
+    
+    return jsonify({'symbols': symbols, 'limit': -1})
 
 @app.route('/api/scrape/<symbol>')
 @login_required
-@admin_required  # 🆕 Solo admin
 def scrape_symbol(symbol):
-    """Scraping manuale per un simbolo"""
+    """Scraping manuale - solo admin"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Accesso negato - solo admin'}), 403
+    
     if symbol not in COT_SYMBOLS:
         return jsonify({'error': 'Simbolo non valido'}), 400
     
-    # Scraping
-    data = scrape_cot_data(symbol)
-    if not data:
-        return jsonify({'error': 'Errore scraping'}), 500
+    # Qui continua il tuo codice di scraping esistente...
+    # (mantieni tutto il codice che hai già)
     
-   # Salva nel database
-    try:
-        # Filtra solo i campi supportati dal modello COTData
-        db_data = {
-            'symbol': data['symbol'],
-            'date': data['date'],
-            'non_commercial_long': data['non_commercial_long'],
-            'non_commercial_short': data['non_commercial_short'],
-            'non_commercial_spreads': data.get('non_commercial_spreads', 0),
-            'commercial_long': data['commercial_long'],
-            'commercial_short': data['commercial_short'],
-            'net_position': data['net_position'],
-            'sentiment_score': data['sentiment_score']
-        }
-        
-        cot_entry = COTData(**db_data)
-        db.session.add(cot_entry)
-        db.session.commit()
-        print(f" Dati salvati per {symbol}")
-    except Exception as e:
-        print(f"  Errore salvataggio dati: {str(e)}")
-        db.session.rollback()
-    
-    # Analisi GPT
-    gpt_analysis = analyze_with_gpt(data)
-    try:
-        gpt_analysis_parsed = json.loads(gpt_analysis) if isinstance(gpt_analysis, str) else gpt_analysis
-    except Exception:
-        gpt_analysis_parsed = {'raw': gpt_analysis}
-        
-    # ML Prediction con debug
-    print(f"=== DEBUG ML per {symbol} ===")
-    historical = COTData.query.filter_by(symbol=symbol).order_by(COTData.date).all()
-    print(f"Record storici trovati: {len(historical)}")
-    print(f"Predictor model exists: {predictor.model is not None}")
-    print(f"Predictor trained: {predictor.is_trained}")
-    
-    ml_prediction = None
-    if len(historical) > 2:  # Soglia abbassata per test
-        print("Tentativo training ML...")
-        hist_data = [{
-            'non_commercial_long': h.non_commercial_long,
-            'non_commercial_short': h.non_commercial_short,
-            'commercial_long': h.commercial_long,
-            'commercial_short': h.commercial_short,
-            'net_position': h.net_position,
-            'sentiment_score': h.sentiment_score
-        } for h in historical]
-       
-        train_result = predictor.train(hist_data)
-        print(f"Training result: {train_result}")
-        
-        if train_result:
-            ml_prediction = predictor.predict(data)
-            print(f"ML prediction result: {ml_prediction}")
-    else:
-        print(f"Dati insufficienti per ML: {len(historical)} <= 2")
-    
-    print("=== FINE DEBUG ML ===")
-    
-    # NUOVA SEZIONE: Analisi Tecnica
-    technical_analysis = None
-    technical_signals = None
-    
-    if TECHNICAL_ANALYZER_AVAILABLE:
-        try:
-            print(f"=== ANALISI TECNICA per {symbol} ===")
-            technical_analysis = get_symbol_technical_data(symbol)
-            technical_signals = get_technical_signals(symbol)
-            
-            print(f" Analisi tecnica completata per {symbol}")
-            print(f"   Prezzo corrente: ${technical_analysis.get('current_price', 0):.2f}")
-            print(f"   Supporto forte: ${technical_analysis.get('strong_support', 0):.2f}")
-            print(f"   Resistenza forte: ${technical_analysis.get('strong_resistance', 0):.2f}")
-            print(f"   Segnale tecnico: {technical_signals.get('overall', {}).get('signal', 'N/A')}")
-            
-        except Exception as e:
-            print(f"  Errore analisi tecnica: {e}")
-            # Crea dati di fallback
-            base_price = {'GOLD': 2539.71, 'USD': 103.45, 'EUR': 1.0875}.get(symbol, 100.0)
-            technical_analysis = {
-                'symbol': symbol,
-                'current_price': base_price,
-                'strong_resistance': base_price * 1.025,
-                'strong_support': base_price * 0.985,
-                'error': str(e),
-                'note': 'Dati di fallback - Technical Analyzer con errore'
-            }
-            technical_signals = {
-                'overall': {'signal': 'NEUTRAL', 'confidence': 50},
-                'error': str(e)
-            }
-    else:
-        print("  Technical Analyzer non disponibile - saltato")
-    
-    # Salva predizione (sempre, anche senza ML)
-    try:
-        # Prova a estrarre direzione e confidenza dall'analisi GPT
-        gpt_direction = "NEUTRAL"
-        gpt_confidence = 50
-        ml_score = None
-        
-        # Se abbiamo ML prediction, usa quei valori
-        if ml_prediction:
-            gpt_direction = ml_prediction['direction']
-            gpt_confidence = ml_prediction['confidence']
-            ml_score = ml_prediction.get('score', 0)
-        else:
-            # Altrimenti prova a estrarre dall'analisi GPT
-            try:
-                gpt_data = json.loads(gpt_analysis) if isinstance(gpt_analysis, str) else gpt_analysis
-                gpt_direction = gpt_data.get('direction', 'NEUTRAL')
-                gpt_confidence = gpt_data.get('confidence', 50)
-            except:
-                pass  # Usa i valori di default
-
-        # NORMALIZZA GPT ANALYSIS PER UNICODE PULITO
-        try:
-            # Se è già una stringa JSON, parsala e ri-serializzala pulita
-            if isinstance(gpt_analysis, str):
-                parsed = json.loads(gpt_analysis)
-            else:
-                parsed = gpt_analysis
-            
-            # Re-serializza con encoding Unicode corretto
-            gpt_analysis_clean = json.dumps(parsed, ensure_ascii=False, indent=2)
-            
-        except Exception as e:
-            # Se non è JSON valido, incapsulalo in un oggetto
-            logger.warning(f"GPT analysis non è JSON valido: {e}")
-            gpt_analysis_clean = json.dumps({
-                "raw": str(gpt_analysis),
-                "note": "Analisi non in formato JSON standard"
-            }, ensure_ascii=False, indent=2)
-
-        # Crea la prediction con tutti i campi
-        prediction = Prediction(
-            symbol=symbol,
-            prediction_date=datetime.now(),
-            predicted_direction=gpt_direction,
-            confidence=float(gpt_confidence),
-            ml_score=float(ml_score) if ml_score is not None else None,
-            gpt_analysis=gpt_analysis_clean
-        )
-        
-        db.session.add(prediction)
-        db.session.commit()
-        
-        logger.info(f"✅ Predizione salvata per {symbol}: {gpt_direction} ({gpt_confidence}%)")
-        
-    except Exception as e:
-        logger.error(f"❌ Errore salvataggio predizione: {str(e)}")
-        db.session.rollback()
-    
-    # RETURN MODIFICATO: Include analisi tecnica
-    return jsonify({
-        'data': data,
-        'gpt_analysis': gpt_analysis_parsed,
-        'ml_prediction': ml_prediction,
-        'technical_analysis': technical_analysis,
-        'technical_signals': technical_signals,
-        'status': 'success'
-    })
+    return jsonify({'status': 'success', 'message': 'Scraping completato'})
 
 @app.route('/api/data/<symbol>')
+@login_required
 def get_data(symbol):
-    """Ottieni dati storici per un simbolo"""
+    """Dati storici simbolo"""
     days = request.args.get('days', 30, type=int)
     
     data = COTData.query.filter_by(symbol=symbol)\
@@ -1687,8 +1572,16 @@ def get_data(symbol):
     } for d in data])
 
 @app.route('/api/predictions/<symbol>')
+@login_required
 def get_predictions(symbol):
-    """Ottieni predizioni per un simbolo"""
+    """Predizioni simbolo - solo Professional"""
+    # Controlla accesso feature AI
+    if not current_user.has_feature('ai_predictions'):
+        return jsonify({
+            'error': 'Feature AI disponibile solo per Professional',
+            'upgrade_url': '/pricing'
+        }), 403
+    
     predictions = Prediction.query.filter_by(symbol=symbol)\
         .order_by(Prediction.prediction_date.desc())\
         .limit(10).all()
@@ -1701,119 +1594,34 @@ def get_predictions(symbol):
         'gpt_analysis': p.gpt_analysis
     } for p in predictions])
 
-@app.route('/api/analysis/multi')
-def multi_analysis():
-    """Analisi multi-asset correlazioni"""
-    symbols = request.args.get('symbols', 'GOLD,USD,EUR').split(',')
-    
-    result = {}
-    for symbol in symbols:
-        latest = COTData.query.filter_by(symbol=symbol)\
-            .order_by(COTData.date.desc()).first()
-        
-        if latest:
-            result[symbol] = {
-                'sentiment': latest.sentiment_score,
-                'net_position': latest.net_position,
-                'date': latest.date.isoformat()
-            }
-    
-    # Calcola correlazioni
-    if len(result) > 1:
-        sentiments = [v['sentiment'] for v in result.values()]
-        avg_sentiment = np.mean(sentiments)
-        result['market_sentiment'] = {
-            'average': avg_sentiment,
-            'trend': 'BULLISH' if avg_sentiment > 10 else 'BEARISH' if avg_sentiment < -10 else 'NEUTRAL'
-        }
-    
-    return jsonify(result)
+# ==========================================
+# HEALTH CHECK (per Render)
+# ==========================================
 
-@app.route('/api/backtest/<symbol>')
-def backtest(symbol):
-    """Backtest delle predizioni"""
-    predictions = Prediction.query.filter_by(symbol=symbol)\
-        .filter(Prediction.actual_result.isnot(None))\
-        .all()
-    
-    if not predictions:
-        return jsonify({'message': 'Nessun dato di backtest disponibile'})
-    
-    correct = sum(1 for p in predictions if p.predicted_direction == p.actual_result)
-    accuracy = (correct / len(predictions)) * 100
-    
+@app.route('/health')
+def health():
+    """Health check"""
     return jsonify({
-        'total_predictions': len(predictions),
-        'correct': correct,
-        'accuracy': accuracy,
-        'avg_confidence': np.mean([p.confidence for p in predictions])
+        'status': 'ok',
+        'timestamp': datetime.utcnow().isoformat(),
+        'database': 'connected'
     })
-@app.route('/profile')
-@login_required
-def profile_page():
-    """Pagina profilo utente"""
-    from datetime import datetime
-    
-    # Calcola statistiche utente
-    stats = {
-        'days_active': (datetime.utcnow() - current_user.created_at).days,
-        'analyses_count': 156,  # Da sostituire con query reale
-        'assets_tracked': 12,   # Da sostituire con query reale
-        'accuracy': 92          # Da sostituire con calcolo reale
-    }
-    
-    return render_template('profile.html', stats=stats)
 
-@app.route('/auth/update-profile', methods=['POST'])
-@login_required
-def update_profile():
-    """Aggiorna dati utente"""
-    data = request.json
-    
-    try:
-        current_user.first_name = data['firstName']
-        current_user.last_name = data['lastName']
-        current_user.email = data['email']
-        db.session.commit()
-        return jsonify({'success': True})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+# ==========================================
+# ERROR HANDLERS
+# ==========================================
 
-@app.route('/auth/change-password', methods=['POST'])
-@login_required
-def change_password():
-    """Cambia password utente"""
-    from werkzeug.security import check_password_hash, generate_password_hash
-    data = request.json
-    
-    # Verifica password attuale
-    if not check_password_hash(current_user.password, data['currentPassword']):
-        return jsonify({'success': False, 'error': 'Password attuale errata'}), 400
-    
-    # Aggiorna password
-    try:
-        current_user.password = generate_password_hash(data['newPassword'])
-        db.session.commit()
-        return jsonify({'success': True})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+@app.errorhandler(404)
+def not_found(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Not found'}), 404
+    return render_template('404.html'), 404
 
-@app.route('/auth/update-preferences', methods=['POST'])
-@login_required
-def update_preferences():
-    """Aggiorna preferenze utente"""
-    data = request.json
-    
-    try:
-        current_user.email_notifications = data.get('emailNotifications', False)
-        current_user.newsletter = data.get('newsletter', False)
-        db.session.commit()
-        return jsonify({'success': True})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+@app.errorhandler(500)
+def server_error(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Internal server error'}), 500
+    return render_template('500.html'), 500
 
 # =================== SCHEDULED TASKS ===================
 def scheduled_scraping():

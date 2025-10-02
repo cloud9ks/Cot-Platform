@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - COT Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+        }
+        .checkout-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .checkout-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .checkout-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .checkout-body {
+            padding: 40px;
+        }
+        .plan-summary {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .price-display {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #667eea;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-list .fa-check {
+            color: #10b981;
+            margin-right: 10px;
+        }
+        .btn-checkout {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            color: white;
+            width: 100%;
+        }
+        .btn-checkout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        .security-badges {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .security-badge {
+            text-align: center;
+            color: #6b7280;
+        }
+        .security-badge i {
+            font-size: 2rem;
+            color: #10b981;
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="checkout-container">
+        <div class="checkout-card">
+            <!-- Header -->
+            <div class="checkout-header">
+                <h2>
+                    <i class="fas fa-shopping-cart me-2"></i>
+                    Completa il tuo Ordine
+                </h2>
+                <p class="mb-0">Pagamento sicuro elaborato da Stripe</p>
+            </div>
+
+            <!-- Body -->
+            <div class="checkout-body">
+                <!-- Plan Summary -->
+                <div class="plan-summary">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4>Piano {{ plan.name }}</h4>
+                            <ul class="feature-list">
+                                {% if plan.features.max_assets == -1 %}
+                                <li><i class="fas fa-check"></i> Asset illimitati</li>
+                                {% else %}
+                                <li><i class="fas fa-check"></i> {{ plan.features.max_assets }} asset monitorati</li>
+                                {% endif %}
+                                {% if plan.features.ai_predictions %}
+                                <li><i class="fas fa-check"></i> Previsioni AI con GPT-4</li>
+                                {% endif %}
+                                {% if plan.features.advanced_analysis %}
+                                <li><i class="fas fa-check"></i> Analisi tecnica avanzata</li>
+                                {% endif %}
+                                {% if plan.features.alerts %}
+                                <li><i class="fas fa-check"></i> Alert intelligenti</li>
+                                {% endif %}
+                                {% if plan.features.export_data %}
+                                <li><i class="fas fa-check"></i> Export dati CSV/Excel</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="price-display">€{{ plan.price }}</div>
+                            <small class="text-muted">/mese</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Utente -->
+                <div class="mb-4">
+                    <h5 class="mb-3">Informazioni Account</h5>
+                    <div class="alert alert-info">
+                        <strong>{{ user.first_name }} {{ user.last_name }}</strong><br>
+                        {{ user.email }}
+                    </div>
+                </div>
+
+                <!-- Alert -->
+                <div id="alertContainer"></div>
+
+                <!-- Checkout Button -->
+                <button id="checkoutButton" class="btn btn-checkout">
+                    <i class="fas fa-lock me-2"></i>
+                    Procedi al Pagamento Sicuro
+                </button>
+
+                <!-- Info Aggiuntive -->
+                <div class="mt-4 text-center text-muted">
+                    <small>
+                        <i class="fas fa-info-circle me-2"></i>
+                        Sarai reindirizzato alla pagina di pagamento sicura Stripe
+                    </small>
+                </div>
+
+                <div class="mt-3 text-center text-muted">
+                    <small>
+                        <i class="fas fa-rotate-left me-2"></i>
+                        Puoi cancellare l'abbonamento in qualsiasi momento dal tuo profilo
+                    </small>
+                </div>
+
+                <!-- Security Badges -->
+                <div class="security-badges">
+                    <div class="security-badge">
+                        <i class="fas fa-shield-alt"></i>
+                        <small>Pagamento<br>Sicuro</small>
+                    </div>
+                    <div class="security-badge">
+                        <i class="fas fa-lock"></i>
+                        <small>Dati<br>Crittografati</small>
+                    </div>
+                    <div class="security-badge">
+                        <i class="fas fa-credit-card"></i>
+                        <small>Stripe<br>Verified</small>
+                    </div>
+                </div>
+
+                <!-- Cancel Link -->
+                <div class="text-center mt-4">
+                    <a href="/dashboard" class="text-muted">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Torna alla Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="mt-5 text-center text-muted">
+            <h6>Domande Frequenti</h6>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <strong>Posso cancellare?</strong>
+                    <p class="small">Sì, in qualsiasi momento dal tuo profilo</p>
+                </div>
+                <div class="col-md-4">
+                    <strong>È sicuro?</strong>
+                    <p class="small">Sì, usiamo Stripe con crittografia SSL</p>
+                </div>
+                <div class="col-md-4">
+                    <strong>Serve la carta?</strong>
+                    <p class="small">Sì, accettiamo tutte le principali carte</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Inizializza Stripe
+        const stripe = Stripe('{{ stripe_key }}');
+        
+        // Gestione click checkout
+        document.getElementById('checkoutButton').addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Disabilita pulsante
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creazione sessione...';
+            
+            try {
+                // Chiamata API per creare sessione Stripe
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        plan: '{{ user.subscription_plan }}'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.checkoutUrl) {
+                    // Redirect a Stripe Checkout
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Reindirizzamento a Stripe...';
+                    window.location.href = data.checkoutUrl;
+                } else {
+                    throw new Error(data.error || 'Errore nella creazione della sessione');
+                }
+                
+            } catch (error) {
+                console.error('Errore checkout:', error);
+                
+                // Mostra errore
+                document.getElementById('alertContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        ${error.message || 'Errore nel processo di pagamento. Riprova.'}
+                    </div>
+                `;
+                
+                // Riabilita pulsante
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+    </script>
+</body>
+</html>

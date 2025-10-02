@@ -232,6 +232,35 @@
     </div>
 
     <!-- Symbol Selector -->
+    <!-- Badge Piano e Info Trial -->
+    <div class="alert alert-info d-flex align-items-center justify-content-between mb-4">
+      <div class="d-flex align-items-center gap-3">
+        <i class="fa-solid fa-crown fs-4"></i>
+        <div>
+          <h6 class="mb-0">
+            Piano: <strong>{{ current_user.subscription_plan|capitalize }}</strong>
+            {% if current_user.is_in_trial() %}
+              <span class="badge bg-warning">Trial</span>
+            {% endif %}
+          </h6>
+          <small class="text-muted">
+            {% if current_user.is_in_trial() %}
+              Trial termina tra {{ current_user.get_days_until_renewal() }} giorni
+            {% elif current_user.subscription_plan != 'starter' %}
+              Rinnovo tra {{ current_user.get_days_until_renewal() }} giorni
+            {% else %}
+              Trial gratuito di 30 giorni
+            {% endif %}
+          </small>
+        </div>
+      </div>
+      
+      {% if current_user.subscription_plan == 'starter' %}
+      <a href="/pricing" class="btn btn-success">
+        <i class="fa-solid fa-rocket"></i> Upgrade a Professional
+      </a>
+      {% endif %}
+    </div>
     <div id="symbolSelector" class="symbol-selector">
       <div class="loading">
         <div class="spinner-border text-primary"></div>

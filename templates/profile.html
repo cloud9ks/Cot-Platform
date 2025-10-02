@@ -78,7 +78,6 @@
         }
         .plan-starter { background: #e0f2fe; color: #0369a1; }
         .plan-professional { background: #d1fae5; color: #065f46; }
-        .plan-enterprise { background: #ede9fe; color: #5b21b6; }
         .form-control {
             padding: 12px 16px;
             border: 2px solid #e5e7eb;
@@ -132,8 +131,8 @@
                     <p class="text-muted mb-2">
                         <i class="fas fa-envelope me-2"></i>{{ current_user.email }}
                     </p>
-                    <span class="plan-badge plan-{{ current_user.plan }}">
-                        <i class="fas fa-crown me-1"></i>Piano {{ current_user.plan|capitalize }}
+                    <span class="plan-badge plan-{{ current_user.subscription_plan }}">
+                        <i class="fas fa-crown me-1"></i>Piano {{ current_user.subscription_plan|capitalize }}
                     </span>
                 </div>
                 <div class="col-md-auto">
@@ -240,34 +239,110 @@
             </div>
 
             <div class="col-md-4">
-                <!-- Abbonamento -->
+                <!-- Abbonamento COMPLETO -->
                 <div class="card-section">
                     <h5 class="mb-3">
                         <i class="fas fa-credit-card me-2 text-success"></i>
-                        Abbonamento
+                        Piano e Abbonamento
                     </h5>
-                    <div class="mb-3">
-                        <strong>Piano Attuale:</strong><br>
-                        <span class="plan-badge plan-{{ current_user.plan }}">
-                            {{ current_user.plan|capitalize }}
-                        </span>
+                    
+                    <!-- Piano Corrente -->
+                    <div class="row mb-4">
+                        <div class="col-6">
+                            <strong>Piano Attuale:</strong><br>
+                            <span class="plan-badge plan-{{ current_user.subscription_plan }} mt-2">
+                                <i class="fas fa-crown me-1"></i>
+                                {{ current_user.subscription_plan|capitalize }}
+                            </span>
+                        </div>
+                        <div class="col-6">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-{{ 'success' if current_user.subscription_status == 'active' else 'warning' }} mt-2">
+                                {{ current_user.subscription_status|upper }}
+                            </span>
+                        </div>
                     </div>
+                    
+                    <!-- Prezzo -->
                     <div class="mb-3">
-                        <strong>Prezzo:</strong><br>
-                        {% if current_user.plan == 'starter' %}
-                        €12.99/mese
-                        {% elif current_user.plan == 'professional' %}
-                        €49/mese
-                        {% elif current_user.plan == 'enterprise' %}
-                        €199/mese
+                        <strong>Prezzo:</strong>
+                        <div class="h4 text-primary mb-0">
+                            {% if current_user.subscription_plan == 'starter' %}
+                            €12.99/mese
+                            {% elif current_user.subscription_plan == 'professional' %}
+                            €49/mese
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Trial Info -->
+                    {% if current_user.trial_ends_at and current_user.trial_ends_at > current_user.created_at %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock me-2"></i>
+                        <strong>Trial Attivo</strong><br>
+                        Termina il {{ current_user.trial_ends_at.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Rinnovo Info -->
+                    {% if current_user.subscription_current_period_end %}
+                    <div class="mb-3">
+                        <strong>Prossimo Rinnovo:</strong><br>
+                        {{ current_user.subscription_current_period_end.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Cancellazione Programmata -->
+                    {% if current_user.subscription_cancel_at %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>In Cancellazione</strong><br>
+                        Termina il {{ current_user.subscription_cancel_at.strftime('%d/%m/%Y') }}
+                        <button class="btn btn-sm btn-success mt-2 w-100" onclick="reactivateSubscription()">
+                            <i class="fas fa-undo"></i> Riattiva
+                        </button>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Azioni -->
+                    <div class="d-grid gap-2 mt-4">
+                        <!-- Upgrade per Starter -->
+                        {% if current_user.subscription_plan == 'starter' %}
+                        <a href="/pricing" class="btn btn-success">
+                            <i class="fas fa-rocket"></i> Upgrade a Professional - €49/mese
+                        </a>
+                        {% endif %}
+                        
+                        <!-- Customer Portal Stripe -->
+                        {% if current_user.subscription_plan != 'starter' %}
+                        <button class="btn btn-primary" onclick="openCustomerPortal()">
+                            <i class="fas fa-cog"></i> Gestisci Pagamenti
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Cambia Piano -->
+                        <a href="/pricing" class="btn btn-outline-primary">
+                            <i class="fas fa-exchange-alt"></i> Cambia Piano
+                        </a>
+                        
+                        <!-- Cancella Abbonamento -->
+                        {% if current_user.subscription_plan != 'starter' and not current_user.subscription_cancel_at %}
+                        <button class="btn btn-outline-danger" onclick="confirmCancelSubscription()">
+                            <i class="fas fa-times-circle"></i> Cancella Abbonamento
+                        </button>
                         {% endif %}
                     </div>
-                    <a href="/pricing" class="btn btn-outline-primary w-100 mb-2">
-                        <i class="fas fa-exchange-alt"></i> Cambia Piano
-                    </a>
-                    <a href="/billing" class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-file-invoice"></i> Fatture
-                    </a>
+                    
+                    <div class="alert alert-info mt-3">
+                        <small>
+                            <i class="fas fa-info-circle me-2"></i>
+                            {% if current_user.subscription_plan == 'starter' %}
+                            Trial gratuito di 30 giorni. Upgrade quando vuoi.
+                            {% else %}
+                            Puoi cancellare in qualsiasi momento.
+                            {% endif %}
+                        </small>
+                    </div>
                 </div>
 
                 <!-- Preferenze -->
@@ -376,7 +451,7 @@
                 
                 if (res.ok) {
                     document.getElementById('alertPassword').innerHTML = 
-                        '<div class="alert alert-success">Password aggiornata con successo!</div>';
+                        '<div class="alert alert-success">Password aggiornata!</div>';
                     document.getElementById('passwordForm').reset();
                 } else {
                     document.getElementById('alertPassword').innerHTML = 
@@ -387,6 +462,69 @@
                     '<div class="alert alert-danger">Errore di connessione</div>';
             }
         });
+        
+        // Customer Portal Stripe
+        async function openCustomerPortal() {
+            try {
+                const res = await fetch('/api/subscription/portal', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                if (data.success && data.url) {
+                    window.location.href = data.url;
+                } else {
+                    alert('Errore: ' + (data.error || 'Impossibile aprire portale'));
+                }
+            } catch (error) {
+                alert('Errore di connessione');
+            }
+        }
+        
+        // Conferma cancellazione
+        function confirmCancelSubscription() {
+            if (confirm('Sei sicuro di voler cancellare?\n\nResterà attivo fino alla fine del periodo.')) {
+                cancelSubscription();
+            }
+        }
+        
+        // Cancella abbonamento
+        async function cancelSubscription() {
+            try {
+                const res = await fetch('/api/subscription/cancel', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Abbonamento cancellato');
+                    location.reload();
+                } else {
+                    alert('Errore: ' + data.error);
+                }
+            } catch (error) {
+                alert('Errore di connessione');
+            }
+        }
+        
+        // Riattiva abbonamento
+        async function reactivateSubscription() {
+            try {
+                const res = await fetch('/api/subscription/reactivate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Abbonamento riattivato!');
+                    location.reload();
+                } else {
+                    alert('Errore: ' + data.error);
+                }
+            } catch (error) {
+                alert('Errore di connessione');
+            }
+        }
         
         // Salva preferenze
         async function savePreferences() {
@@ -413,7 +551,7 @@
         // Elimina account
         function deleteAccount() {
             if (confirm('Sei sicuro? Questa azione è irreversibile!')) {
-                if (confirm('ULTIMA CONFERMA: Tutti i dati verranno eliminati permanentemente.')) {
+                if (confirm('ULTIMA CONFERMA: Tutti i dati verranno eliminati.')) {
                     fetch('/auth/delete-account', {
                         method: 'POST'
                     }).then(() => {
