@@ -1611,6 +1611,7 @@ with app.app_context():
     except Exception as e:
         print(f"⚠️ Tabelle già esistenti o errore DB: {e}")
         # Continua comunque - le tabelle esistono già
+        
 # Inizializza scheduler
 scheduler.init_app(app)
 scheduler.start()
