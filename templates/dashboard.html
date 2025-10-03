@@ -208,10 +208,20 @@
           <span id="systemStatus" class="badge bg-success ms-1">Sistema Online</span>
         </p>
       </div>
+      <!-- Badge Admin -->
+{% if current_user.is_authenticated and current_user.is_admin %}
+<span class="badge" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 20px; font-size: 14px; border-radius: 50px;">
+  <i class="fa-solid fa-crown"></i> ADMIN
+</span>
+{% endif %}
       <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary" id="btnSystemStatus" title="Status Sistema">
+        <button class="btn btn-outline-secondary" id="btnSystemStatus">
           <i class="fa-solid fa-server"></i>
         </button>
+        <!-- Link Profilo -->
+<a href="/profile" class="btn btn-outline-secondary">
+  <i class="fa-solid fa-user"></i> Profilo
+</a>
         {% if current_user.is_authenticated and current_user.is_admin %}
 <span class="badge bg-purple me-2">
   <i class="fa-solid fa-crown"></i> ADMIN
@@ -262,13 +272,63 @@
       {% endif %}
     </div>
     <div id="symbolSelector" class="symbol-selector">
-      <div class="loading">
-        <div class="spinner-border text-primary"></div>
-        <p class="mt-2">Caricamento simboli...</p>
-      </div>
+      <!-- I simboli verranno caricati qui da JavaScript -->
     </div>
-
-    <!-- Tabs -->
+    
+    <script>
+    // Carica simboli all'avvio
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSymbols();
+    });
+    
+    function loadSymbols() {
+      const container = document.getElementById('symbolSelector');
+      
+      // Mostra loading
+      container.innerHTML = '<div class="loading"><div class="spinner-border text-primary"></div><p class="mt-2">Caricamento simboli...</p></div>';
+      
+      // Fetch simboli
+      fetch('/api/symbols')
+        .then(res => res.json())
+        .then(data => {
+          if (data.symbols && data.symbols.length > 0) {
+            // Crea pulsanti simboli
+            let html = '';
+            data.symbols.forEach(symbol => {
+              html += `
+                <button class="symbol-btn" data-symbol="${symbol.code || symbol}" 
+                        onclick="selectSymbol('${symbol.code || symbol}')">
+                  ${symbol.name || symbol}
+                </button>
+              `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Mostra messaggio limite se presente
+            if (data.limit && data.limit > 0) {
+              container.insertAdjacentHTML('beforebegin', 
+                `<div class="alert alert-warning">
+                  <i class="fas fa-info-circle"></i> 
+                  Piano Starter: max ${data.limit} asset monitorabili
+                </div>`
+              );
+            }
+            
+            // Seleziona primo simbolo automaticamente
+            if (data.symbols[0]) {
+              selectSymbol(data.symbols[0].code || data.symbols[0]);
+            }
+          } else {
+            container.innerHTML = '<div class="alert alert-danger">Nessun simbolo disponibile</div>';
+          }
+        })
+        .catch(error => {
+          console.error('Errore caricamento simboli:', error);
+          container.innerHTML = '<div class="alert alert-danger">Errore nel caricamento dei simboli</div>';
+        });
+    }
+    </script>
     
 <!-- Info per utenti normali -->
 {% if current_user.is_authenticated and not current_user.is_admin %}
