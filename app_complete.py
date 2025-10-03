@@ -1605,9 +1605,12 @@ def scheduled_scraping():
 # =================== INIZIALIZZAZIONE ===================
 # Inizializza database all'avvio
 with app.app_context():
-    db.create_all()
-    print(" Database creato")
-
+    try:
+        db.create_all()
+        print("✅ Database creato/verificato")
+    except Exception as e:
+        print(f"⚠️ Tabelle già esistenti o errore DB: {e}")
+        # Continua comunque - le tabelle esistono già
 # Inizializza scheduler
 scheduler.init_app(app)
 scheduler.start()
