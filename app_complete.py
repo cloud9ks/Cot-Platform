@@ -52,85 +52,42 @@ if DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 
-# Database
-db = SQLAlchemy(app)
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
 logger = logging.getLogger("cot_platform")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.register_blueprint(auth_bp)
+app.context_processor(subscription_context_processor)
 
 # Inizializza database
 db.init_app(app)
+scheduler = APScheduler()
 
-# Login Manager
+# Setup Flask-Login
 from flask_login import LoginManager
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login_page'
+login_manager.session_protection = 'strong'
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Scheduler per aggiornamenti automatici
-scheduler = APScheduler()
-
-# =================== MODELLI DATABASE ===================
-
-# =================== USER MODEL & ADMIN DECORATOR ===================
-from flask_login import LoginManager, UserMixin, login_required, current_user
-from functools import wraps
-
-# Setup Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-login_manager.login_message = 'Devi effettuare il login per accedere a questa pagina'
-login_manager.login_message_category = 'info'
-login_manager.session_protection = 'strong'  # Protezione sessione forte
-
 @login_manager.unauthorized_handler
 def unauthorized():
-    """Handler per accessi non autorizzati"""
     if request.is_json:
         return jsonify({'error': 'Login richiesto'}), 401
     return redirect('/login')
 
-class User(UserMixin, db.Model):
-    """Modello User con supporto admin"""
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    first_name = db.Column(db.String(80))
-    last_name = db.Column(db.String(80))
-    password_hash = db.Column(db.String(256))
-    is_admin = db.Column(db.Boolean, default=False)  # 🆕 Campo admin
-    subscription_plan = db.Column(db.String(20), default='starter')
-    subscription_status = db.Column(db.String(20), default='active')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-def admin_required(f):
-    """Decoratore per route che richiedono privilegi admin"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            return jsonify({'error': 'Login richiesto'}), 401
-        if not current_user.is_admin:
-            return jsonify({'error': 'Privilegi admin richiesti'}), 403
-        return f(*args, **kwargs)
-    return decorated_function
-
-
 class COTData(db.Model):
+    __tablename__ = 'cot_data'
+    
     id = db.Column(db.Integer, primary_key=True)
-    symbol = db.Column(db.String(20), nullable=False)
-    date = db.Column(db.DateTime, nullable=False)
+    symbol = db.Column(db.String(20), nullable=False, index=True)
+    date = db.Column(db.DateTime, nullable=False, index=True)
     non_commercial_long = db.Column(db.Integer)
     non_commercial_short = db.Column(db.Integer)
     non_commercial_spreads = db.Column(db.Integer)
@@ -141,8 +98,10 @@ class COTData(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Prediction(db.Model):
+    __tablename__ = 'predictions'
+    
     id = db.Column(db.Integer, primary_key=True)
-    symbol = db.Column(db.String(20), nullable=False)
+    symbol = db.Column(db.String(20), nullable=False, index=True)
     prediction_date = db.Column(db.DateTime, nullable=False)
     predicted_direction = db.Column(db.String(20))
     confidence = db.Column(db.Float)
@@ -1398,13 +1357,6 @@ def get_newest_data_date():
 from flask_login import login_required, current_user
 
 # ==========================================
-# REGISTRA BLUEPRINT E CONTEXT PROCESSOR
-# (aggiungi PRIMA delle routes)
-# ==========================================
-app.register_blueprint(auth_bp)
-app.context_processor(subscription_context_processor)
-
-# ==========================================
 # ROUTES PUBBLICHE
 # ==========================================
 
@@ -1671,174 +1623,6 @@ scheduler.add_job(
 )
 
 print(" Sistema inizializzato")
-
-# =================== MAIN ===================
-
-# =================== API USER/ADMIN ===================
-@app.route('/api/user/info')
-@login_required
-def get_user_info():
-    """Info utente corrente"""
-    return jsonify({
-        'id': current_user.id,
-        'email': current_user.email,
-        'name': f"{current_user.first_name or ''} {current_user.last_name or ''}",
-        'is_admin': current_user.is_admin,
-        'subscription_plan': current_user.subscription_plan
-    })
-
-
-
-# =================== AUTENTICAZIONE ROUTES ===================
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import login_user, logout_user
-
-@app.route('/auth/register', methods=['POST'])
-def auth_register():
-    """API endpoint per registrazione utente"""
-    try:
-        data = request.get_json()
-        
-        # Validazione input
-        email = data.get('email', '').strip().lower()
-        password = data.get('password', '')
-        first_name = data.get('firstName', '')
-        last_name = data.get('lastName', '')
-        plan = data.get('plan', 'starter')
-        
-        if not email or not password:
-            return jsonify({
-                'success': False,
-                'error': 'Email e password richiesti'
-            }), 400
-        
-        if len(password) < 8:
-            return jsonify({
-                'success': False,
-                'error': 'Password deve essere almeno 8 caratteri'
-            }), 400
-        
-        # Verifica email esistente
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            return jsonify({
-                'success': False,
-                'error': 'Email già registrata'
-            }), 400
-        
-        # Crea nuovo utente
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        
-        new_user = User(
-            email=email,
-            password_hash=hashed_password,
-            first_name=first_name,
-            last_name=last_name,
-            subscription_plan=plan,
-            subscription_status='active',
-            is_admin=False
-        )
-        
-        db.session.add(new_user)
-        db.session.commit()
-        
-        # Auto-login dopo registrazione
-        login_user(new_user, remember=True)
-        
-        logger.info(f"✅ Nuovo utente registrato: {email}")
-        
-        return jsonify({
-            'success': True,
-            'redirect': '/dashboard',
-            'user': {
-                'email': new_user.email,
-                'plan': new_user.subscription_plan
-            }
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"❌ Errore registrazione: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': f'Errore server: {str(e)}'
-        }), 500
-
-@app.route('/auth/login', methods=['POST'])
-def auth_login():
-    """API endpoint per login utente"""
-    try:
-        data = request.get_json()
-        
-        email = data.get('email', '').strip().lower()
-        password = data.get('password', '')
-        
-        if not email or not password:
-            return jsonify({
-                'success': False,
-                'error': 'Email e password richiesti'
-            }), 400
-        
-        # Cerca utente
-        user = User.query.filter_by(email=email).first()
-        
-        if not user:
-            return jsonify({
-                'success': False,
-                'error': 'Credenziali non valide'
-            }), 401
-        
-        # Verifica password
-        if not check_password_hash(user.password_hash, password):
-            return jsonify({
-                'success': False,
-                'error': 'Credenziali non valide'
-            }), 401
-        
-        # Login utente
-        login_user(user, remember=True)
-        
-        logger.info(f"✅ Login effettuato: {email}")
-        
-        return jsonify({
-            'success': True,
-            'redirect': '/dashboard',
-            'user': {
-                'email': user.email,
-                'is_admin': user.is_admin,
-                'plan': user.subscription_plan
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"❌ Errore login: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': f'Errore server: {str(e)}'
-        }), 500
-
-@app.route('/login', methods=['GET'])
-def login_page():
-    """Pagina di login"""
-    if current_user.is_authenticated:
-        return redirect('/dashboard')
-    return render_template('login.html')
-
-@app.route('/register', methods=['GET'])  
-def register_page():
-    """Pagina di registrazione"""
-    if current_user.is_authenticated:
-        return redirect('/dashboard')
-    return render_template('register.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    """Logout utente"""
-    email = current_user.email
-    logout_user()
-    logger.info(f"✅ Logout effettuato: {email}")
-    return redirect('/')
 
 # =================== CLI COMMANDS ===================
 @app.cli.command('create-admin')

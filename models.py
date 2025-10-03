@@ -36,9 +36,9 @@ SUBSCRIPTION_PLANS = {
         'name': 'Professional',
         'price': 49.00,
         'price_id': os.environ.get('STRIPE_PROFESSIONAL_PRICE_ID'),
-        'trial_days': 0,  # Nessun trial per Professional
+        'trial_days': 0,
         'features': {
-            'max_assets': -1,  # Illimitato
+            'max_assets': -1,
             'cot_data': True,
             'basic_charts': True,
             'ai_predictions': True,
@@ -104,15 +104,12 @@ class User(UserMixin, db.Model):
     
     def has_active_subscription(self):
         """Controlla se l'abbonamento è attivo"""
-        # Starter è sempre attivo
         if self.subscription_plan == 'starter':
             return True
         
-        # Controllo status
         if self.subscription_status not in ['active', 'trialing']:
             return False
         
-        # Controllo periodo corrente
         if self.subscription_current_period_end:
             return self.subscription_current_period_end > datetime.utcnow()
         
@@ -144,7 +141,6 @@ class User(UserMixin, db.Model):
         plan = self.get_plan_info()
         max_assets = plan['features']['max_assets']
         
-        # -1 significa illimitato
         if max_assets == -1:
             return True
         
@@ -184,8 +180,9 @@ class SubscriptionEvent(db.Model):
     stripe_event_id = db.Column(db.String(100))
     stripe_invoice_id = db.Column(db.String(100))
     
-    # Metadata (JSON serializzato come stringa)
-    metadata = db.Column(db.Text)
+    # 🔧 FIX: Rinominato da 'metadata' a 'event_metadata' 
+    # perché 'metadata' è riservato in SQLAlchemy
+    event_metadata = db.Column(db.Text)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -220,7 +217,7 @@ def init_db(app):
             print("✅ Admin user creato: admin@cotanalysis.com / admin123")
 
 def create_subscription_event(user, event_type, old_plan=None, new_plan=None, 
-                             stripe_event_id=None, metadata=None):
+                             stripe_event_id=None, event_metadata=None):
     """Helper per creare eventi abbonamento"""
     event = SubscriptionEvent(
         user_id=user.id,
@@ -228,7 +225,7 @@ def create_subscription_event(user, event_type, old_plan=None, new_plan=None,
         old_plan=old_plan,
         new_plan=new_plan,
         stripe_event_id=stripe_event_id,
-        metadata=metadata
+        event_metadata=event_metadata  # 🔧 FIX: aggiornato nome parametro
     )
     db.session.add(event)
     db.session.commit()
