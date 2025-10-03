@@ -10,10 +10,22 @@ import stripe
 import os
 from datetime import datetime, timedelta
 
-# Inizializza Stripe
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+import os
+from dotenv import load_dotenv
+import stripe
 
-# Blueprint
+# Carica variabili d'ambiente
+load_dotenv()
+
+# Inizializza Stripe con la chiave segreta
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+
+# Debug: verifica che la chiave sia caricata
+if not stripe.api_key:
+    print("⚠️ ATTENZIONE: STRIPE_SECRET_KEY non trovata!")
+else:
+    print(f"✅ Stripe inizializzato (chiave: {stripe.api_key[:12]}...)")
+    
 auth_bp = Blueprint('auth', __name__)
 
 # ==========================================
