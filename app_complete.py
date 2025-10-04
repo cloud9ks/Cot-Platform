@@ -1475,22 +1475,39 @@ def update_preferences():
 @login_required
 def get_symbols():
     """Lista simboli disponibili"""
-    symbols = list(COT_SYMBOLS.values())
-    
     # Admin o Professional: tutti i simboli
     if current_user.is_admin or current_user.subscription_plan == 'professional':
+        symbols_list = [
+            {'code': 'GOLD', 'name': 'Gold'},
+            {'code': 'USD', 'name': 'US Dollar Index'},
+            {'code': 'EUR', 'name': 'Euro FX'},
+            {'code': 'GBP', 'name': 'British Pound'},
+            {'code': 'JPY', 'name': 'Japanese Yen'},
+            {'code': 'CHF', 'name': 'Swiss Franc'},
+            {'code': 'CAD', 'name': 'Canadian Dollar'},
+            {'code': 'AUD', 'name': 'Australian Dollar'},
+            {'code': 'SILVER', 'name': 'Silver'},
+            {'code': 'OIL', 'name': 'Crude Oil'}
+        ]
         return jsonify({
-            'symbols': symbols,
-            'limit': None,  # null in JSON
+            'symbols': symbols_list,
+            'limit': None,
             'message': None
         })
     
-    # Starter: primi 5 simboli
-    max_assets = 5
+    # Starter: primi 5
+    symbols_list = [
+        {'code': 'GOLD', 'name': 'Gold'},
+        {'code': 'USD', 'name': 'US Dollar Index'},
+        {'code': 'EUR', 'name': 'Euro FX'},
+        {'code': 'GBP', 'name': 'British Pound'},
+        {'code': 'JPY', 'name': 'Japanese Yen'}
+    ]
+    
     return jsonify({
-        'symbols': symbols[:max_assets],
-        'limit': max_assets,
-        'message': f'Piano Starter: max {max_assets} asset monitorabili. Passa a Professional per tutti gli asset.'
+        'symbols': symbols_list,
+        'limit': 5,
+        'message': 'Piano Starter: max 5 asset monitorabili. Passa a Professional per tutti gli asset.'
     })
 
 @app.route('/api/scrape/<symbol>')

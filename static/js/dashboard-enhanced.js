@@ -192,68 +192,46 @@ async function loadSymbols() {
     if (!res.ok) throw new Error('symbols fetch failed');
     const data = await res.json();
 
-    let symbolsList = [];
-    let planLimit = null;
-    
-    if (data.symbols && Array.isArray(data.symbols)) {
-      symbolsList = data.symbols;
-      planLimit = data.limit;
-      
-      if (planLimit && planLimit > 0 && data.message) {
-        const container = document.getElementById('symbolSelector');
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-warning mb-3';
-        alert.innerHTML = `<i class="fas fa-info-circle"></i> ${data.message}`;
-        container.parentElement.insertBefore(alert, container);
-      }
-    } else {
-      symbolsList = Object.keys(data).map(code => ({
-        code: code,
-        name: data[code].name || code
-      }));
-    }
-
     const container = document.getElementById('symbolSelector');
     container.innerHTML = '';
     
-    symbolsList.forEach((symbol) => {
-      const code = symbol.code || symbol;
-      const name = symbol.name || symbol;
-      
+    // Mostra alert limite se presente
+    if (data.limit && data.limit > 0 && data.message) {
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-warning mb-3 w-100';
+      alert.innerHTML = `<i class="fas fa-info-circle"></i> ${data.message}`;
+      container.parentElement.insertBefore(alert, container);
+    }
+
+    // Crea pulsanti
+    data.symbols.forEach((symbol) => {
       const btn = document.createElement('button');
-      btn.className = 'symbol-btn' + (code === currentSymbol ? ' active' : '');
-      btn.textContent = `${code} — ${name}`;
-      btn.dataset.symbol = code;
+      btn.className = 'symbol-btn';
+      btn.textContent = symbol.name;  // SOLO il nome, non il codice
+      btn.dataset.symbol = symbol.code;
       
       btn.addEventListener('click', async () => {
-        if (currentSymbol === code) return;
         document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        currentSymbol = code;
+        currentSymbol = symbol.code;
+        console.log('Simbolo selezionato:', currentSymbol);
         await reloadAll();
       });
       
       container.appendChild(btn);
     });
 
-    symbols = {};
-    symbolsList.forEach(s => {
-      const code = s.code || s;
-      symbols[code] = { name: s.name || code };
-    });
-
-    if (symbolsList.length > 0) {
-      const firstSymbol = symbolsList[0].code || symbolsList[0];
-      if (!currentSymbol || !symbols[currentSymbol]) {
-        currentSymbol = firstSymbol;
-        await reloadAll();
-      }
+    // Seleziona primo simbolo automaticamente
+    if (data.symbols.length > 0) {
+      currentSymbol = data.symbols[0].code;
+      container.firstChild.classList.add('active');
+      await reloadAll();
     }
     
   } catch (e) {
     console.error('Errore caricamento simboli:', e);
     document.getElementById('symbolSelector').innerHTML = 
-      '<div class="alert alert-danger">Errore nel caricamento dei simboli</div>';
+      '<div class="alert alert-danger">Errore caricamento simboli</div>';
   }
 }
 /* ========= CHARTS ========= */
