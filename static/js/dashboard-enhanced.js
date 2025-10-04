@@ -13,6 +13,19 @@ let isAnalyzing = false;
 let autoRefreshInterval = null;
 let priceChartInstance = null;
 
+// Configurazione piano utente
+let userPlan = {
+  type: 'starter',
+  isAdmin: false,
+  limit: 5,
+  features: {
+    aiPredictions: false,
+    alerts: false,
+    technicalAnalysis: false,
+    advancedCharts: false
+  }
+};
+
 /* ========= FORMATTERS ========= */
 const numberFmt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 4 });
 const currencyFmt = new Intl.NumberFormat('it-IT', {
@@ -41,6 +54,7 @@ function renderTechnicalIndicators(data) {
 /* ========= BOOT ========= */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    await loadUserPlanConfig();
     setupEventListeners();
     await loadSymbols();
     initCharts();
@@ -52,6 +66,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     showAlert("Errore durante l'inizializzazione della dashboard", 'danger');
   }
 });
+/* ========= CONFIGURAZIONE PIANO ========= */
+async function loadUserPlanConfig() {
+  try {
+    const res = await fetch('/api/user/plan');
+    if (res.ok) {
+      const data = await res.json();
+      userPlan = {
+        type: data.plan || 'starter',
+        isAdmin: data.is_admin || false,
+        limit: data.limit || 5,
+        features: {
+          aiPredictions: data.features?.aiPredictions || data.plan === 'professional' || data.is_admin,
+          alerts: data.features?.alerts || data.plan === 'professional' || data.is_admin,
+          technicalAnalysis: data.features?.technicalAnalysis || data.plan === 'professional' || data.is_admin,
+          advancedCharts: data.features?.advancedCharts || data.plan === 'professional' || data.is_admin
+        }
+      };
+      applyPlanRestrictions();
+    }
+  } catch (e) {
+    console.warn('Piano config non disponibile:', e);
+  }
+}
+
+function applyPlanRestrictions() {
+  if (!userPlan.isAdmin) {
+    const btnRefresh = document.getElementById('btnRefresh');
+    const btnRun = document.getElementById('btnRun');
+    if (btnRefresh) btnRefresh.style.display = 'none';
+    if (btnRun) btnRun.style.display = 'none';
+  }
+  
+  if (!userPlan.features.aiPredictions) {
+    const tab = document.getElementById('predictions-tab');
+    if (tab) {
+      tab.style.opacity = '0.5';
+      tab.style.pointerEvents = 'none';
+      tab.title = 'Disponibile solo con piano Professional';
+    }
+  }
+  
+  if (!userPlan.features.technicalAnalysis) {
+    const tab = document.getElementById('technical-tab');
+    if (tab) {
+      tab.style.opacity = '0.5';
+      tab.style.pointerEvents = 'none';
+      tab.title = 'Disponibile solo con piano Professional';
+    }
+  }
+}
+
+function checkFeatureAccess(feature) {
+  if (userPlan.isAdmin) return true;
+  return userPlan.features[feature] || false;
+}
 
 /* ========= LISTENERS ========= */
 function setupEventListeners() {
@@ -121,29 +190,72 @@ async function loadSymbols() {
   try {
     const res = await fetch('/api/symbols');
     if (!res.ok) throw new Error('symbols fetch failed');
-    symbols = await res.json();
+    const data = await res.json();
+
+    let symbolsList = [];
+    let planLimit = null;
+    
+    if (data.symbols && Array.isArray(data.symbols)) {
+      symbolsList = data.symbols;
+      planLimit = data.limit;
+      
+      if (planLimit && planLimit > 0 && data.message) {
+        const container = document.getElementById('symbolSelector');
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-warning mb-3';
+        alert.innerHTML = `<i class="fas fa-info-circle"></i> ${data.message}`;
+        container.parentElement.insertBefore(alert, container);
+      }
+    } else {
+      symbolsList = Object.keys(data).map(code => ({
+        code: code,
+        name: data[code].name || code
+      }));
+    }
 
     const container = document.getElementById('symbolSelector');
     container.innerHTML = '';
-    Object.keys(symbols).forEach((sym) => {
+    
+    symbolsList.forEach((symbol) => {
+      const code = symbol.code || symbol;
+      const name = symbol.name || symbol;
+      
       const btn = document.createElement('button');
-      btn.className = 'symbol-btn' + (sym === currentSymbol ? ' active' : '');
-      btn.textContent = `${sym} — ${symbols[sym].name || sym}`;
+      btn.className = 'symbol-btn' + (code === currentSymbol ? ' active' : '');
+      btn.textContent = `${code} — ${name}`;
+      btn.dataset.symbol = code;
+      
       btn.addEventListener('click', async () => {
-        if (currentSymbol === sym) return;
+        if (currentSymbol === code) return;
         document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        currentSymbol = sym;
+        currentSymbol = code;
         await reloadAll();
       });
+      
       container.appendChild(btn);
     });
+
+    symbols = {};
+    symbolsList.forEach(s => {
+      const code = s.code || s;
+      symbols[code] = { name: s.name || code };
+    });
+
+    if (symbolsList.length > 0) {
+      const firstSymbol = symbolsList[0].code || symbolsList[0];
+      if (!currentSymbol || !symbols[currentSymbol]) {
+        currentSymbol = firstSymbol;
+        await reloadAll();
+      }
+    }
+    
   } catch (e) {
     console.error('Errore caricamento simboli:', e);
-    document.getElementById('symbolSelector').innerHTML = '<div class="text-danger">Errore caricamento simboli</div>';
+    document.getElementById('symbolSelector').innerHTML = 
+      '<div class="alert alert-danger">Errore nel caricamento dei simboli</div>';
   }
 }
-
 /* ========= CHARTS ========= */
 function initCharts() {
   const cotCtx = document.getElementById('cotChart');
@@ -304,7 +416,7 @@ async function loadInitialData() {
     loadPredictions(currentSymbol),
     loadSystemStatus(),
     loadMarketOverview(),
-    loadAlerts(currentSymbol)            // <-- aggiungi
+    loadAlerts(currentSymbol)            
   ]);
 }
 
@@ -329,7 +441,7 @@ async function reloadAll() {
     loadPredictions(currentSymbol),
     loadSystemStatus(),
     loadMarketOverview(),
-    loadAlerts(currentSymbol)            // <-- aggiungi
+    loadAlerts(currentSymbol)            
   ]);
 }
 
@@ -346,8 +458,20 @@ function withinHours(ts, hours=48) {
 }
 
 async function loadAlerts(symbol) {
-  const box = document.getElementById('alertsBox'); // Assicurati che l'HTML abbia id="alertsBox"
+  const box = document.getElementById('alertsBox') || document.getElementById('alertsPanel');
   if (!box) return;
+
+  // Se non ha accesso agli alert personalizzati, mostra upgrade
+  if (!checkFeatureAccess('alerts')) {
+    box.innerHTML = `
+      <div class="alert alert-info">
+        <i class="fas fa-bell-slash"></i>
+        <strong>Alert Personalizzati</strong>
+        <p class="mb-2 small">Ricevi notifiche automatiche quando il mercato si muove.</p>
+        <a href="/pricing" class="btn btn-sm btn-success">Upgrade a Professional</a>
+      </div>`;
+    return;
+  }
 
   try {
     const [tRes, calRes] = await Promise.allSettled([
@@ -979,7 +1103,23 @@ function renderEconomicCalendarHTML(events) {
 async function loadPredictions(symbol) {
   const table  = document.getElementById('predictionsTable');
   const gptBox = document.getElementById('gptAnalysis');
-
+  // Verifica accesso
+  if (!checkFeatureAccess('aiPredictions')) {
+    if (gptBox) {
+      gptBox.innerHTML = `
+        <div class="alert alert-warning">
+          <h5><i class="fas fa-lock"></i> Funzionalità Premium</h5>
+          <p>Le previsioni AI sono disponibili solo con il piano <strong>Professional</strong>.</p>
+          <a href="/pricing" class="btn btn-success mt-2">
+            <i class="fas fa-rocket"></i> Upgrade a Professional
+          </a>
+        </div>`;
+    }
+    if (table) {
+      table.innerHTML = `<tr><td colspan="7" class="text-center">Disponibile con piano Professional</td></tr>`;
+    }
+    return;
+  }
   try {
     const [predRes, completeRes] = await Promise.allSettled([
       fetch(`/api/predictions/${encodeURIComponent(symbol)}`),
@@ -1312,6 +1452,12 @@ async function loadMarketOverview() {
 
 /* ========= ANALISI COMPLETA (SCRAPE + REFRESH) ========= */
 async function runFullAnalysis(symbol) {
+  // Solo admin può eseguire analisi manuale
+  if (!userPlan.isAdmin) {
+    showAlert('Funzionalità riservata agli amministratori', 'warning');
+    return;
+  }
+  
   setLoading('#gptAnalysis', true, 'Esecuzione analisi AI in corso...');
   try {
     const res = await fetch(`/api/scrape/${encodeURIComponent(symbol)}`);

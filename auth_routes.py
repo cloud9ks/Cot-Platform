@@ -174,6 +174,73 @@ def logout():
     return redirect(url_for('index'))
 
 # ==========================================
+# API CONFIGURAZIONE PIANO
+# ==========================================
+
+@auth_bp.route('/api/user/plan')
+@login_required
+def get_user_plan():
+    """Restituisce configurazione piano utente per dashboard"""
+    try:
+        plan_type = current_user.subscription_plan or 'starter'
+        is_admin = getattr(current_user, 'is_admin', False)
+        
+        # Admin: accesso completo
+        if is_admin:
+            return jsonify({
+                'plan': 'admin',
+                'is_admin': True,
+                'limit': None,
+                'features': {
+                    'aiPredictions': True,
+                    'alerts': True,
+                    'technicalAnalysis': True,
+                    'advancedCharts': True
+                }
+            })
+        
+        # Professional: tutto tranne controlli admin
+        if plan_type == 'professional':
+            return jsonify({
+                'plan': 'professional',
+                'is_admin': False,
+                'limit': None,
+                'features': {
+                    'aiPredictions': True,
+                    'alerts': True,
+                    'technicalAnalysis': True,
+                    'advancedCharts': True
+                }
+            })
+        
+        # Starter: limitato
+        return jsonify({
+            'plan': 'starter',
+            'is_admin': False,
+            'limit': 5,
+            'features': {
+                'aiPredictions': False,
+                'alerts': False,
+                'technicalAnalysis': False,
+                'advancedCharts': False
+            }
+        })
+        
+    except Exception as e:
+        print(f"Errore get_user_plan: {e}")
+        return jsonify({
+            'plan': 'starter',
+            'is_admin': False,
+            'limit': 5,
+            'features': {
+                'aiPredictions': False,
+                'alerts': False,
+                'technicalAnalysis': False,
+                'advancedCharts': False
+            }
+        }), 500
+
+# ==========================================
 # CHECKOUT STRIPE
 # ==========================================
 

@@ -1477,16 +1477,21 @@ def get_symbols():
     """Lista simboli disponibili"""
     symbols = list(COT_SYMBOLS.values())
     
-    # Limita per piano Starter
-    if current_user.subscription_plan == 'starter':
-        max_assets = current_user.get_plan_info()['features']['max_assets']
+    # Admin o Professional: tutti i simboli
+    if current_user.is_admin or current_user.subscription_plan == 'professional':
         return jsonify({
-            'symbols': symbols[:max_assets],
-            'limit': max_assets,
-            'message': f'Piano Starter: max {max_assets} asset'
+            'symbols': symbols,
+            'limit': None,  # null in JSON
+            'message': None
         })
     
-    return jsonify({'symbols': symbols, 'limit': -1})
+    # Starter: primi 5 simboli
+    max_assets = 5
+    return jsonify({
+        'symbols': symbols[:max_assets],
+        'limit': max_assets,
+        'message': f'Piano Starter: max {max_assets} asset monitorabili. Passa a Professional per tutti gli asset.'
+    })
 
 @app.route('/api/scrape/<symbol>')
 @login_required

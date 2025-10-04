@@ -60,6 +60,9 @@
 </head>
 <body>
   <div class="dashboard-container">
+    <!-- CONTAINER ALERT (per notifiche dinamiche) -->
+    <div id="alertsContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999; max-width: 400px;"></div>
+    
     <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
@@ -237,7 +240,7 @@
           <div class="col-12 col-lg-6">
             <div class="card-enhanced">
               <h5 class="mb-3"><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i>Alert e Notifiche</h5>
-              <div id="alertsPanel">
+              <div id="alertsBox">
                 <div class="text-muted">Nessun alert attivo</div>
               </div>
             </div>
