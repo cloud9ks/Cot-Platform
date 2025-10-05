@@ -1,7 +1,9 @@
 """
-Collectors package - Scraping dati COT
+Analysis package - Moduli di analisi COT
 """
 
-from .cot_scraper import COTScraper
+# ✅ Import corretti - SOLO moduli nella cartella analysis/
+from .gpt_analyzer import GPTAnalyzer
+from .predictions import COTPredictionSystem
 
-__all__ = ['COTScraper']
+__all__ = ['GPTAnalyzer', 'COTPredictionSystem']
