@@ -30,6 +30,7 @@ from auth_routes import auth_bp
 from decorators import subscription_context_processor
 # ✅ Import GPT Analyzer
 from analysis.gpt_analyzer import GPTAnalyzer
+logger = logging.getLogger(__name__)
 
 # ✅ Istanza singleton globale
 gpt_analyzer = GPTAnalyzer()
