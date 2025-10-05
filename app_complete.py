@@ -1548,9 +1548,9 @@ def get_data(symbol):
 @app.route('/api/predictions/<symbol>')
 @login_required
 def get_predictions(symbol):
-    """Predizioni simbolo - solo Professional"""
-    # Controlla accesso feature AI
-    if not current_user.has_feature('ai_predictions'):
+    """Predizioni simbolo - solo Professional o Admin"""
+    # ✅ ADMIN bypassa tutto
+    if not current_user.is_admin and not current_user.has_feature('ai_predictions'):
         return jsonify({
             'error': 'Feature AI disponibile solo per Professional',
             'upgrade_url': '/pricing'
@@ -1567,7 +1567,6 @@ def get_predictions(symbol):
         'ml_score': p.ml_score,
         'gpt_analysis': p.gpt_analysis
     } for p in predictions])
-
 # ==========================================
 # HEALTH CHECK (per Render)
 # ==========================================
