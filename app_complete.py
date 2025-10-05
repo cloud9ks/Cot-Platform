@@ -268,99 +268,67 @@ def scrape_cot_data(symbol):
 
 # =================== ANALISI GPT-4 CORRETTA ===================
 def analyze_with_gpt(data):
-    """Analisi con GPT-4 dei dati COT - VERSIONE MIGLIORATA"""
+    """Analisi con GPT-4 dei dati COT - VERSIONE CORRETTA"""
     try:
-        # Controlla se la chiave API  disponibile
         openai_api_key = os.environ.get('OPENAI_API_KEY')
         if not openai_api_key:
-            print("  OpenAI API key non configurata")
-            return create_fallback_analysis(data)
+            logger.warning("OpenAI API key non configurata")
+            return create_fallback_analysis(data)  # ← Ritorna dict
         
-        # Inizializza client OpenAI con nuova API
         from openai import OpenAI
         
         client = OpenAI(api_key=openai_api_key)
         
-        # Calcola metriche avanzate
         nc_net = data['non_commercial_long'] - data['non_commercial_short']
         c_net = data['commercial_long'] - data['commercial_short']
         nc_ratio = data['non_commercial_long'] / max(data['non_commercial_short'], 1)
         c_ratio = data['commercial_long'] / max(data['commercial_short'], 1)
         
-        prompt = f"""
-        Sei un analista COT esperto. Analizza questi dati per {data['symbol']}:
+        prompt = f"""Analizza questi dati COT per {data['symbol']}:
 
-         POSIZIONI:
-        - Non-Commercial Long: {data['non_commercial_long']:,}
-        - Non-Commercial Short: {data['non_commercial_short']:,}
-        - Commercial Long: {data['commercial_long']:,}
-        - Commercial Short: {data['commercial_short']:,}
-        
-         METRICHE:
-        - Net Position NC: {nc_net:,}
-        - Net Position Commercial: {c_net:,}
-        - NC Long/Short Ratio: {nc_ratio:.2f}
-        - Commercial Long/Short Ratio: {c_ratio:.2f}
-        - Sentiment Score: {data['sentiment_score']:.2f}%
+POSIZIONI:
+- Non-Commercial Long: {data['non_commercial_long']:,}
+- Non-Commercial Short: {data['non_commercial_short']:,}
+- Net Position NC: {nc_net:,}
+- Net Position Commercial: {c_net:,}
+- Sentiment Score: {data.get('sentiment_score', 0):.2f}%
 
-        REGOLE ANALISI:
-        1. NC Long dominanti + C Short = BULLISH STRONG
-        2. NC Short dominanti + C Long = BEARISH STRONG  
-        3. Sentiment > 15% = BULLISH
-        4. Sentiment < -15% = BEARISH
-        5. -15% < Sentiment < 15% = NEUTRAL
-
-        Rispondi SOLO in questo formato JSON (senza markdown):
-        {{
-            "direction": "BULLISH/BEARISH/NEUTRAL",
-            "confidence": numero_0_a_100,
-            "market_outlook": "Spiegazione breve e chiara",
-            "key_observations": [
-                "Osservazione 1",
-                "Osservazione 2", 
-                "Osservazione 3"
-            ],
-            "trading_bias": "LONG/SHORT/NEUTRAL",
-            "risk_level": "LOW/MEDIUM/HIGH"
-        }}
-        """
+Rispondi in formato JSON con:
+- direction: BULLISH/BEARISH/NEUTRAL
+- confidence: 0-100
+- market_outlook: spiegazione breve
+- key_observations: array di 2-3 osservazioni
+- trading_bias: LONG/SHORT/NEUTRAL
+- risk_level: LOW/MEDIUM/HIGH"""
         
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Sei un esperto analista COT. Rispondi SEMPRE e SOLO in formato JSON pulito, senza ```json o markdown."},
+                {"role": "system", "content": "Sei un analista COT esperto. Rispondi solo in JSON valido."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.1,  # Pi deterministico
-            max_tokens=800
+            temperature=0.2,
+            max_tokens=600,
+            response_format={"type": "json_object"}  # ← Forza JSON!
         )
         
         response_text = response.choices[0].message.content.strip()
+        analysis = json.loads(response_text)
         
-        # Pulisci la risposta da eventuali markdown
-        response_text = response_text.replace('```json', '').replace('```', '').strip()
+        # Validazione
+        if analysis.get('direction') not in ['BULLISH', 'BEARISH', 'NEUTRAL']:
+            analysis['direction'] = 'NEUTRAL'
         
-        # Prova a parsare JSON
-        try:
-            analysis = json.loads(response_text)
-            
-            # Validazione e correzione
-            if analysis.get('direction') not in ['BULLISH', 'BEARISH', 'NEUTRAL']:
-                analysis['direction'] = 'NEUTRAL'
-            
-            confidence = analysis.get('confidence', 50)
-            if not isinstance(confidence, (int, float)) or confidence < 0 or confidence > 100:
-                analysis['confidence'] = 50
-                
-            return json.dumps(analysis)
-            
-        except json.JSONDecodeError:
-            print(f"  GPT response non  JSON valido: {response_text[:200]}")
-            return create_fallback_analysis(data)
+        confidence = analysis.get('confidence', 50)
+        if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 100:
+            analysis['confidence'] = 50
+        
+        # ✅ Ritorna DICT, non stringa!
+        return analysis
             
     except Exception as e:
-        print(f"  Errore GPT analysis: {str(e)}")
-        return create_fallback_analysis(data)
+        logger.error(f"❌ Errore GPT: {e}")
+        return create_fallback_analysis(data)  # ← Ritorna dict
 
 def create_fallback_analysis(data):
     """Analisi di fallback migliorata"""
