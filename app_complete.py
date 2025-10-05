@@ -1520,11 +1520,61 @@ def scrape_symbol(symbol):
     if symbol not in COT_SYMBOLS:
         return jsonify({'error': 'Simbolo non valido'}), 400
     
-    # Qui continua il tuo codice di scraping esistente...
-    # (mantieni tutto il codice che hai già)
+    try:
+        logger.info(f"🚀 Scraping manuale per {symbol}...")
+        
+        # 1. Scraping dati COT
+        data = scrape_cot_data(symbol)
+        
+        if not data:
+            return jsonify({'error': 'Scraping fallito'}), 500
+        
+        # 2. Salva nel database
+        existing = COTData.query.filter_by(
+            symbol=symbol,
+            date=data['date']
+        ).first()
+        
+        if not existing:
+            cot_entry = COTData(**data)
+            db.session.add(cot_entry)
+            db.session.commit()
+            logger.info(f"✅ Dati COT salvati per {symbol}")
+        else:
+            logger.info(f"ℹ️ Dati già presenti per {symbol}")
+        
+        # 3. Genera predizione AI
+        gpt_analysis = None
+        try:
+            gpt_analysis = analyze_with_gpt(data)
+        except Exception as e:
+            logger.error(f"❌ Errore GPT analysis: {e}")
+        
+        # 4. Salva predizione
+        if gpt_analysis:
+            prediction = Prediction(
+                symbol=symbol,
+                prediction_date=datetime.now(),
+                predicted_direction=gpt_analysis.get('direction', 'NEUTRAL'),
+                confidence=gpt_analysis.get('confidence', 50),
+                ml_score=None,
+                gpt_analysis=json.dumps(gpt_analysis) if isinstance(gpt_analysis, dict) else gpt_analysis
+            )
+            db.session.add(prediction)
+            db.session.commit()
+            logger.info(f"✅ Predizione salvata per {symbol}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Analisi completata per {symbol}',
+            'data': data,
+            'gpt_analysis': gpt_analysis
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Errore scraping {symbol}: {e}")
+        return jsonify({'error': str(e)}), 500
     
-    return jsonify({'status': 'success', 'message': 'Scraping completato'})
-
 @app.route('/api/data/<symbol>')
 @login_required
 def get_data(symbol):
