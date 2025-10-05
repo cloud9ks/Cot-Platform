@@ -48,9 +48,7 @@
       height: 100%;
     }
     
-    .card-enhanced:hover {
-      transform: translateY(-4px);
-    }
+    .card-enhanced:hover { transform: translateY(-4px); }
     
     .symbol-btn {
       padding: 12px 20px;
@@ -63,15 +61,8 @@
       transition: all 0.2s;
     }
     
-    .symbol-btn:hover {
-      background: var(--primary);
-      color: white;
-    }
-    
-    .symbol-btn.active {
-      background: var(--primary);
-      color: white;
-    }
+    .symbol-btn:hover { background: var(--primary); color: white; }
+    .symbol-btn.active { background: var(--primary); color: white; }
     
     .signal-box {
       display: inline-block;
@@ -100,11 +91,29 @@
       background: var(--primary);
       color: white;
     }
+    
+    .metric-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      padding: 24px;
+      color: white;
+      text-align: center;
+    }
+    
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .metric-label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
   <div class="dashboard-container">
-    <!-- Container Alert -->
     <div id="alertsContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999; max-width: 400px;"></div>
     
     <!-- Header -->
@@ -186,6 +195,11 @@
         </button>
       </li>
       <li class="nav-item">
+        <button class="nav-link" id="economic-tab" data-bs-toggle="tab" data-bs-target="#economic" type="button">
+          <i class="fa-solid fa-globe me-1"></i> Dati Economici
+        </button>
+      </li>
+      <li class="nav-item">
         <button class="nav-link" id="predictions-tab" data-bs-toggle="tab" data-bs-target="#predictions" type="button">
           <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Previsioni
         </button>
@@ -194,7 +208,8 @@
 
     <!-- Content -->
     <div class="tab-content" id="mainTabsContent">
-      <!-- Panoramica -->
+      
+      <!-- PANORAMICA -->
       <div class="tab-pane fade show active" id="overview">
         <div class="row g-3 mb-4">
           <div class="col-12 col-md-3">
@@ -210,6 +225,9 @@
             <div class="card-enhanced">
               <h6 class="text-muted">Sentiment Score</h6>
               <h3 id="sentimentScore" class="mb-2">—</h3>
+              <div id="sentimentBar" style="width:100%;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:0%;background:linear-gradient(90deg,#6b7280,#9ca3af);transition:width 0.3s;"></div>
+              </div>
             </div>
           </div>
           <div class="col-12 col-md-3">
@@ -226,6 +244,18 @@
               <h6 class="text-muted">Ultimo Aggiornamento</h6>
               <h3 id="lastUpdate" class="mb-1">—</h3>
               <small class="text-muted">Sistema attivo</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panoramica Mercato -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <div class="card-enhanced">
+              <h5 class="mb-3"><i class="fa-solid fa-globe text-primary me-2"></i>Panoramica Mercato</h5>
+              <div id="marketOverview">
+                <div class="loading">Caricamento...</div>
+              </div>
             </div>
           </div>
         </div>
@@ -250,17 +280,61 @@
         </div>
       </div>
 
-      <!-- Grafici COT -->
+      <!-- GRAFICI COT -->
       <div class="tab-pane fade" id="charts">
-        <div class="card-enhanced mb-4">
-          <h5 class="mb-3">Posizioni COT · Trend Storico</h5>
-          <div class="chart-wrap">
-            <canvas id="cotChart"></canvas>
+        <!-- Period Selector -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Posizioni COT · Trend Storico</h5>
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-sm btn-outline-primary" data-period="30">30D</button>
+            <button type="button" class="btn btn-sm btn-outline-primary active" data-period="90">90D</button>
+            <button type="button" class="btn btn-sm btn-outline-primary" data-period="180">1Y</button>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-lg-8">
+            <div class="card-enhanced">
+              <div class="chart-wrap">
+                <canvas id="cotChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card-enhanced">
+              <h6 class="mb-3">Distribuzione Posizioni</h6>
+              <div style="position:relative;height:300px;">
+                <canvas id="pieChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabella Dati -->
+        <div class="card-enhanced">
+          <h5 class="mb-3">Dati COT Dettagliati</h5>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>NC Long</th>
+                  <th>NC Short</th>
+                  <th>Commercial Long</th>
+                  <th>Commercial Short</th>
+                  <th>Net Position</th>
+                  <th>Sentiment</th>
+                </tr>
+              </thead>
+              <tbody id="cotDataTable">
+                <tr><td colspan="7" class="text-center text-muted">Caricamento...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- Analisi Tecnica -->
+      <!-- ANALISI TECNICA -->
       <div class="tab-pane fade" id="technical">
         <div class="row g-3">
           <div class="col-12">
@@ -281,8 +355,46 @@
           </div>
           <div class="col-12 col-md-6">
             <div class="card-enhanced">
-              <h5 class="mb-3">Indicatori</h5>
+              <h5 class="mb-3">Indicatori Tecnici</h5>
               <div id="technicalIndicators">
+                <div class="loading">Caricamento...</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card-enhanced">
+              <h5 class="mb-3">Grafico Prezzi con Livelli</h5>
+              <div style="position:relative;height:350px;">
+                <canvas id="priceChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATI ECONOMICI -->
+      <div class="tab-pane fade" id="economic">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="card-enhanced">
+              <h5 class="mb-3">Indicatori Economici Chiave</h5>
+              <div id="economicIndicators">
+                <div class="loading">Caricamento...</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="card-enhanced">
+              <h5 class="mb-3">Fed Watch Tool</h5>
+              <div id="fedWatch">
+                <div class="loading">Caricamento...</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="card-enhanced">
+              <h5 class="mb-3">Calendario Economico</h5>
+              <div id="economicCalendar">
                 <div class="loading">Caricamento...</div>
               </div>
             </div>
@@ -290,7 +402,7 @@
         </div>
       </div>
 
-      <!-- Previsioni -->
+      <!-- PREVISIONI -->
       <div class="tab-pane fade" id="predictions">
         <div class="card-enhanced mb-4">
           <h5 class="mb-3">Analisi GPT</h5>
@@ -301,7 +413,7 @@
           </div>
         </div>
         
-        <div class="card-enhanced">
+        <div class="card-enhanced mb-4">
           <h5 class="mb-3">Storico Previsioni</h5>
           <div class="table-responsive">
             <table class="table">
@@ -322,11 +434,42 @@
             </table>
           </div>
         </div>
+
+        <!-- Status Sistema -->
+        <div class="card-enhanced">
+          <h5 class="mb-3">Status Sistema</h5>
+          <div class="row g-3" id="systemStatusDetail">
+            <div class="col-6 col-md-3">
+              <div class="metric-card">
+                <div class="metric-value">OK</div>
+                <div class="metric-label">Database</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="metric-card">
+                <div class="metric-value">OK</div>
+                <div class="metric-label">OpenAI API</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="metric-card">
+                <div class="metric-value">OK</div>
+                <div class="metric-label">Machine Learning</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="metric-card">
+                <div class="metric-value">OK</div>
+                <div class="metric-label">Selenium</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='js/dashboard-enhanced.js') }}" charset="utf-8"></script>
 </body>
