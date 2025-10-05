@@ -321,7 +321,6 @@ def create_fallback_analysis(data):
     sentiment_score = data.get('sentiment_score', 0)
     nc_net = data['non_commercial_long'] - data['non_commercial_short']
     
-    # Logica migliorata
     if sentiment_score > 5 or nc_net > 50000:
         direction = "BULLISH"
         confidence = min(75 + abs(sentiment_score), 95)
@@ -332,7 +331,8 @@ def create_fallback_analysis(data):
         direction = "NEUTRAL"
         confidence = 50
     
-    return json.dumps({
+    # ✅ RITORNA DICT, NON json.dumps()!
+    return {
         "direction": direction,
         "confidence": confidence,
         "market_outlook": f"Analisi automatica: Net position NC {nc_net:,}, Sentiment {sentiment_score:.2f}%",
@@ -343,7 +343,7 @@ def create_fallback_analysis(data):
         ],
         "trading_bias": direction,
         "risk_level": "MEDIUM"
-    })
+    }
 
 # =================== MACHINE LEARNING PREDICTIONS ===================
 class COTPredictorFixed:
