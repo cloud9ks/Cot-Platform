@@ -28,6 +28,13 @@ from dotenv import load_dotenv
 from models import db, User, init_db, SUBSCRIPTION_PLANS
 from auth_routes import auth_bp
 from decorators import subscription_context_processor
+# ✅ Import GPT Analyzer
+from analysis.gpt_analyzer import GPTAnalyzer
+
+# ✅ Istanza singleton globale
+gpt_analyzer = GPTAnalyzer()
+logger.info("✅ GPT Analyzer inizializzato")
+
 load_dotenv()
 
 # =================== CONFIGURAZIONE ===================
@@ -264,86 +271,6 @@ def scrape_cot_data(symbol):
         except Exception as e:
             logger.error(f"❌ Errore generale scraping {symbol}: {str(e)}")
             return None
-
-
-# =================== ANALISI GPT-4 CORRETTA ===================
-def analyze_with_gpt(data):
-    """Analisi con GPT-4 dei dati COT - VERSIONE CORRETTA"""
-    try:
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
-        if not openai_api_key:
-            logger.warning("OpenAI API key non configurata")
-            return create_fallback_analysis(data)
-        
-        from openai import OpenAI
-        
-        client = OpenAI(api_key=openai_api_key)  # ✅ NESSUN proxies
-        
-        nc_net = data['non_commercial_long'] - data['non_commercial_short']
-        sentiment = data.get('sentiment_score', 0)
-        
-        prompt = f"""Analizza questi dati COT per {data['symbol']}:
-- Net Position NC: {nc_net:,}
-- Sentiment: {sentiment:.2f}%
-
-Rispondi in JSON con: direction (BULLISH/BEARISH/NEUTRAL), confidence (0-100), market_outlook (spiegazione)"""
-        
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Sei un analista COT esperto. Rispondi solo in JSON valido."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.2,
-            max_tokens=500,
-            response_format={"type": "json_object"}
-        )
-        
-        analysis = json.loads(response.choices[0].message.content.strip())
-        
-        # Validazione
-        if analysis.get('direction') not in ['BULLISH', 'BEARISH', 'NEUTRAL']:
-            analysis['direction'] = 'NEUTRAL'
-        
-        confidence = analysis.get('confidence', 50)
-        if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 100:
-            analysis['confidence'] = 50
-        
-        # ✅ RITORNA DICT, NON STRINGA!
-        return analysis
-            
-    except Exception as e:
-        logger.error(f"❌ Errore GPT: {e}")
-        return create_fallback_analysis(data)
-
-def create_fallback_analysis(data):
-    """Analisi di fallback migliorata"""
-    sentiment_score = data.get('sentiment_score', 0)
-    nc_net = data['non_commercial_long'] - data['non_commercial_short']
-    
-    if sentiment_score > 5 or nc_net > 50000:
-        direction = "BULLISH"
-        confidence = min(75 + abs(sentiment_score), 95)
-    elif sentiment_score < -5 or nc_net < -50000:
-        direction = "BEARISH" 
-        confidence = min(75 + abs(sentiment_score), 95)
-    else:
-        direction = "NEUTRAL"
-        confidence = 50
-    
-    # ✅ RITORNA DICT, NON json.dumps()!
-    return {
-        "direction": direction,
-        "confidence": confidence,
-        "market_outlook": f"Analisi automatica: Net position NC {nc_net:,}, Sentiment {sentiment_score:.2f}%",
-        "key_observations": [
-            f"Non-Commercial net: {nc_net:,}",
-            f"Sentiment score: {sentiment_score:.2f}%",
-            f"Bias: {direction}"
-        ],
-        "trading_bias": direction,
-        "risk_level": "MEDIUM"
-    }
 
 # =================== MACHINE LEARNING PREDICTIONS ===================
 class COTPredictorFixed:
@@ -1020,9 +947,20 @@ def get_complete_analysis(symbol):
                     'net_position': latest_cot.net_position,
                     'sentiment_score': latest_cot.sentiment_score
                 }
-                gpt_raw = analyze_with_gpt(gpt_input)
+                
+                # ✅ USA GPTAnalyzer invece di analyze_with_gpt()
+                if gpt_analyzer.client:
+                    gpt_raw = gpt_analyzer.analyze_single_symbol(gpt_input)
+                else:
+                    logger.warning("GPT Analyzer non disponibile - usando fallback")
+                    gpt_raw = gpt_analyzer._create_fallback_analysis(gpt_input)
+                
+                # Gestisci il risultato
                 try:
-                    complete_analysis['gpt_analysis'] = json.loads(gpt_raw) if isinstance(gpt_raw, str) else gpt_raw
+                    if isinstance(gpt_raw, dict):
+                        complete_analysis['gpt_analysis'] = gpt_raw
+                    else:
+                        complete_analysis['gpt_analysis'] = json.loads(gpt_raw)
                 except Exception:
                     complete_analysis['gpt_analysis'] = {'raw': gpt_raw, 'note': 'Non-JSON'}
             except Exception as e:
@@ -1497,12 +1435,17 @@ def scrape_symbol(symbol):
         else:
             logger.info(f"ℹ️ Dati già presenti per {symbol}")
         
-        # 3. Genera predizione AI
+           # 3. ✅ USA GPTAnalyzer invece di analyze_with_gpt()
         gpt_analysis = None
         try:
-            gpt_analysis = analyze_with_gpt(data)
+            if gpt_analyzer.client:  # Verifica che il client sia disponibile
+                gpt_analysis = gpt_analyzer.analyze_single_symbol(data)
+            else:
+                logger.warning("GPT Analyzer non disponibile - usando fallback")
+                gpt_analysis = gpt_analyzer._create_fallback_analysis(data)
         except Exception as e:
             logger.error(f"❌ Errore GPT analysis: {e}")
+            gpt_analysis = gpt_analyzer._create_fallback_analysis(data)
         
         # 4. Salva predizione
         if gpt_analysis:
