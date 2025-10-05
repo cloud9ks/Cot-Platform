@@ -102,8 +102,8 @@ class TechnicalAnalyzer:
             if elapsed >= 60:
                 self._tokens = self._tokens_per_min
                 self._window_start = now
-            if self._tokens <= 0:
-                wait = 60 - elapsed
+            if self._tokens <= 1:
+                wait = 60 - elapsed + 1
                 if wait > 0:
                     logger.warning(f"TD rate-limit locale: sleep {wait:.1f}s per non sforare i crediti")
                     sleep(wait)
@@ -234,7 +234,7 @@ class TechnicalAnalyzer:
             "JPY": "USD/JPY",
             "CHF": "USD/CHF",
             "CAD": "USD/CAD",
-            "USD": "DXY",  # Dollar Index - potrebbe non essere disponibile
+            "USD": "USDX",  
             "OIL": "WTI/USD",
         }
 

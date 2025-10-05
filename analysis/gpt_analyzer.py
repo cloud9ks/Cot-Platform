@@ -44,23 +44,23 @@ class GPTAnalyzer:
         self._init_openai_client()
     
     def _init_openai_client(self):
-        """Inizializza il client OpenAI con la nuova API"""
+        """Inizializza il client OpenAI con la nuova API - VERSIONE CORRETTA"""
         try:
             if not config.OPENAI_API_KEY:
-                logger.error("⚠️ OpenAI API key non configurata!")
+                logger.error("OpenAI API key non configurata!")
                 logger.info("Imposta OPENAI_API_KEY nel file .env")
                 return
             
-            # Importa OpenAI con gestione errori
             try:
                 from openai import OpenAI
                 
-                # Inizializza client con nuova API (versione 1.0+)
+                # FIX: Inizializza client SENZA parametro 'proxies'
+                # La versione 1.0+ di OpenAI non supporta più questo parametro
                 self.client = OpenAI(
                     api_key=config.OPENAI_API_KEY
                 )
                 
-                logger.info("✅ Client OpenAI inizializzato correttamente")
+                logger.info("Client OpenAI inizializzato correttamente")
                 
             except ImportError:
                 logger.error("Libreria OpenAI non trovata. Installa con: pip install openai>=1.0.0")
@@ -126,7 +126,7 @@ class GPTAnalyzer:
             analysis['model'] = self.model
             analysis['symbol'] = cot_data.get('symbol', 'UNKNOWN')
             
-            logger.info(f"✅ Analisi GPT completata per {cot_data.get('symbol', 'N/A')}")
+            logger.info(f"Analisi GPT completata per {cot_data.get('symbol', 'N/A')}")
             return analysis
             
         except Exception as e:
@@ -204,18 +204,18 @@ class GPTAnalyzer:
         prompt = f"""
         Analizza i seguenti dati COT per {name} ({symbol}):
         
-        📊 POSIZIONI ATTUALI:
+        POSIZIONI ATTUALI:
         - Non-Commercial Long: {cot_data.get('non_commercial_long', 0):,}
         - Non-Commercial Short: {cot_data.get('non_commercial_short', 0):,}
         - Commercial Long: {cot_data.get('commercial_long', 0):,}
         - Commercial Short: {cot_data.get('commercial_short', 0):,}
         
-        📈 METRICHE CALCOLATE:
+        METRICHE CALCOLATE:
         - Net Position (NC): {cot_data.get('net_position', 0):,}
         - Sentiment Score: {cot_data.get('sentiment_score', 0):.2f}%
         - Sentiment Direction: {cot_data.get('sentiment_direction', 'NEUTRAL')}
         
-        📉 RATIOS:
+        RATIOS:
         - NC Long/Short Ratio: {cot_data.get('nc_long_ratio', 0):.2f}
         - Commercial Long/Short Ratio: {cot_data.get('c_long_ratio', 0):.2f}
         
@@ -390,7 +390,7 @@ def generate_daily_report(all_symbols_data: Dict) -> str:
     if not analyzer.client:
         # Report semplificato senza GPT
         report = f"""
-        📊 REPORT GIORNALIERO COT - {datetime.now().strftime('%Y-%m-%d')}
+        REPORT GIORNALIERO COT - {datetime.now().strftime('%Y-%m-%d')}
         ===============================================
         
         Analisi automatica di {len(all_symbols_data)} asset:
@@ -408,7 +408,7 @@ def generate_daily_report(all_symbols_data: Dict) -> str:
         
         report += f"""
         
-        ⚠️ Nota: Report generato automaticamente
+        Nota: Report generato automaticamente
         OpenAI GPT non disponibile per analisi approfondita
         
         Timestamp: {datetime.now().isoformat()}
@@ -416,16 +416,46 @@ def generate_daily_report(all_symbols_data: Dict) -> str:
         
         return report
     
-    # Se GPT è disponibile, usa il metodo originale
+    # Se GPT è disponibile, genera report completo
     try:
-        return analyzer.generate_market_report(all_symbols_data)
-    except:
+        prompt = f"""
+        Genera un report di mercato giornaliero analizzando i seguenti dati COT:
+        
+        {json.dumps(all_symbols_data, indent=2)}
+        
+        Il report deve includere:
+        1. Overview generale del mercato
+        2. Asset con sentiment più forte (bullish/bearish)
+        3. Divergenze interessanti
+        4. Raccomandazioni operative
+        """
+        
+        response = analyzer.client.chat.completions.create(
+            model=analyzer.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Sei un analista di mercato che genera report giornalieri basati su dati COT."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=2000
+        )
+        
+        return response.choices[0].message.content.strip()
+        
+    except Exception as e:
+        logger.error(f"Errore generazione report: {str(e)}")
         return "Errore generazione report"
 
 
 # Test del modulo
 if __name__ == "__main__":
-    print("🤖 Test GPT Analyzer (Versione Corretta)")
+    print("Test GPT Analyzer (Versione Corretta)")
     print("="*50)
     
     # Dati di test
@@ -444,15 +474,15 @@ if __name__ == "__main__":
     }
     
     # Test analisi
-    print("\n📊 Analizzando GOLD...")
+    print("\nAnalizzando GOLD...")
     result = quick_analysis('GOLD', test_data)
     
     if result:
-        print("\n✅ Analisi completata!")
+        print("\nAnalisi completata!")
         print(f"Direzione: {result.get('direction', 'N/A')}")
         print(f"Confidenza: {result.get('confidence', 0)}%")
         print(f"Note: {result.get('note', 'N/A')}")
     else:
-        print("\n❌ Analisi fallita")
+        print("\nAnalisi fallita")
     
     print("\n" + "="*50)
