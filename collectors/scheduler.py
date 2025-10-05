@@ -14,7 +14,6 @@ from email.mime.multipart import MIMEMultipart
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import current_config as config
 from collectors.cot_scraper import COTScraper
-from collectors.data_processor import COTDataProcessor
 from analysis.gpt_analyzer import GPTAnalyzer
 from analysis.predictions import COTPredictionSystem
 
@@ -35,7 +34,6 @@ class COTScheduler:
         self.scheduler = BackgroundScheduler(timezone=config.SCHEDULER_TIMEZONE)
         self.db = db
         self.scraper = None
-        self.processor = COTDataProcessor()
         self.analyzer = GPTAnalyzer() if config.OPENAI_API_KEY else None
         self.predictor = COTPredictionSystem()
         self.last_update = None
