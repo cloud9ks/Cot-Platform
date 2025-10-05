@@ -273,33 +273,20 @@ def analyze_with_gpt(data):
         openai_api_key = os.environ.get('OPENAI_API_KEY')
         if not openai_api_key:
             logger.warning("OpenAI API key non configurata")
-            return create_fallback_analysis(data)  # ← Ritorna dict
+            return create_fallback_analysis(data)
         
         from openai import OpenAI
         
-        client = OpenAI(api_key=openai_api_key)
+        client = OpenAI(api_key=openai_api_key)  # ✅ NESSUN proxies
         
         nc_net = data['non_commercial_long'] - data['non_commercial_short']
-        c_net = data['commercial_long'] - data['commercial_short']
-        nc_ratio = data['non_commercial_long'] / max(data['non_commercial_short'], 1)
-        c_ratio = data['commercial_long'] / max(data['commercial_short'], 1)
+        sentiment = data.get('sentiment_score', 0)
         
         prompt = f"""Analizza questi dati COT per {data['symbol']}:
-
-POSIZIONI:
-- Non-Commercial Long: {data['non_commercial_long']:,}
-- Non-Commercial Short: {data['non_commercial_short']:,}
 - Net Position NC: {nc_net:,}
-- Net Position Commercial: {c_net:,}
-- Sentiment Score: {data.get('sentiment_score', 0):.2f}%
+- Sentiment: {sentiment:.2f}%
 
-Rispondi in formato JSON con:
-- direction: BULLISH/BEARISH/NEUTRAL
-- confidence: 0-100
-- market_outlook: spiegazione breve
-- key_observations: array di 2-3 osservazioni
-- trading_bias: LONG/SHORT/NEUTRAL
-- risk_level: LOW/MEDIUM/HIGH"""
+Rispondi in JSON con: direction (BULLISH/BEARISH/NEUTRAL), confidence (0-100), market_outlook (spiegazione)"""
         
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -308,12 +295,11 @@ Rispondi in formato JSON con:
                 {"role": "user", "content": prompt}
             ],
             temperature=0.2,
-            max_tokens=600,
-            response_format={"type": "json_object"}  # ← Forza JSON!
+            max_tokens=500,
+            response_format={"type": "json_object"}
         )
         
-        response_text = response.choices[0].message.content.strip()
-        analysis = json.loads(response_text)
+        analysis = json.loads(response.choices[0].message.content.strip())
         
         # Validazione
         if analysis.get('direction') not in ['BULLISH', 'BEARISH', 'NEUTRAL']:
@@ -323,12 +309,12 @@ Rispondi in formato JSON con:
         if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 100:
             analysis['confidence'] = 50
         
-        # ✅ Ritorna DICT, non stringa!
+        # ✅ RITORNA DICT, NON STRINGA!
         return analysis
             
     except Exception as e:
         logger.error(f"❌ Errore GPT: {e}")
-        return create_fallback_analysis(data)  # ← Ritorna dict
+        return create_fallback_analysis(data)
 
 def create_fallback_analysis(data):
     """Analisi di fallback migliorata"""
