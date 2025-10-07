@@ -895,6 +895,7 @@ if __name__ == "__main__":
 # Inizializza predictor
 predictor = create_production_predictor()
 @app.route('/api/technical/<symbol>')
+@cache_response(timeout=300, key_prefix='technical') 
 def get_technical_analysis(symbol):
     """Analisi tecnica completa per un simbolo"""
     try:
@@ -997,6 +998,7 @@ def get_economic_calendar_api():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/synthesis/<symbol>')
+@cache_response(timeout=900, key_prefix='synthesis')
 def get_cot_synthesis(symbol):
     """Sintesi COT + Tecnica per un simbolo"""
     try:
@@ -1061,6 +1063,7 @@ def get_cot_synthesis(symbol):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/analysis/complete/<symbol>')
+@cache_response(timeout=1800, key_prefix='complete_analysis')
 def get_complete_analysis(symbol):
     """Analisi completa: COT + Tecnica + AI + ML"""
     try:
@@ -1617,6 +1620,7 @@ def scrape_symbol(symbol):
     
 @app.route('/api/data/<symbol>')
 @login_required
+@cache_response(timeout=3600, key_prefix='cot_data')
 def get_data(symbol):
     """Dati storici simbolo"""
     days = request.args.get('days', 30, type=int)
