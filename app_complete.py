@@ -3,10 +3,12 @@ COT Analysis Platform - Sistema Completo FINALE
 Piattaforma professionale per analisi e previsioni COT
 """
 
-from flask import Flask, redirect, render_template, jsonify, request, send_from_directory
+from flask import Flask, redirect, render_template, jsonify, request, send_from_directory, g
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_apscheduler import APScheduler
+from flask_caching import Cache
+from functools import wraps
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
@@ -22,56 +24,141 @@ import json
 import joblib
 import logging
 import warnings
+
 warnings.filterwarnings('ignore')
+
 from ml_system_fixed import COTPredictorFixed, create_production_predictor
 from dotenv import load_dotenv
 from models import db, User, init_db, SUBSCRIPTION_PLANS
 from auth_routes import auth_bp
 from decorators import subscription_context_processor
-# ✅ Import GPT Analyzer
 from analysis.gpt_analyzer import GPTAnalyzer
+
+# Setup logging
 logger = logging.getLogger(__name__)
 
-# ✅ Istanza singleton globale
+# Istanza singleton globale GPT Analyzer
 gpt_analyzer = GPTAnalyzer()
 logger.info("✅ GPT Analyzer inizializzato")
 
 load_dotenv()
 
-# =================== CONFIGURAZIONE ===================
+# =================== CONFIGURAZIONE OTTIMIZZATA ===================
 app = Flask(__name__)
 CORS(app)
-    
+
 # Fix encoding Unicode per JSON responses
 app.config['JSON_AS_ASCII'] = False
 app.config['JSON_SORT_KEYS'] = False
 app.config['JSONIFY_MIMETYPE'] = 'application/json; charset=utf-8'
-app.config['SESSION_COOKIE_SECURE'] = True  # Solo HTTPS in produzione
+
+# Session configuration
+app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-
-# Le tue configurazioni esistenti continuano qui...
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
-# Usa PostgreSQL in produzione, SQLite in sviluppo locale
+
+# ⚡ DATABASE CONFIGURATION OTTIMIZZATA
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///cot_data.db')
-# Fix per Render che usa postgres:// invece di postgresql://
 if DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ECHO'] = False  # Disabilita log query
+
+# 🚀 CONNECTION POOLING - CRITICO PER PERFORMANCE!
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 10,              # Connessioni base nel pool
+    'max_overflow': 20,           # Connessioni extra se necessario
+    'pool_timeout': 30,           # Timeout acquisizione connessione
+    'pool_recycle': 3600,         # Ricicla connessioni dopo 1h
+    'pool_pre_ping': True,        # Verifica connessione prima dell'uso
+    'connect_args': {
+        'connect_timeout': 10,
+        'options': '-c statement_timeout=30000'  # Query timeout 30s
+    }
+}
+
+# 💾 CACHE CONFIGURATION
+app.config['CACHE_TYPE'] = 'simple'  # In-memory per ora
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minuti
+app.config['CACHE_KEY_PREFIX'] = 'cot_'
+
+# Inizializza cache
+cache = Cache(app)
+
+# Logging configuration
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
 logger = logging.getLogger("cot_platform")
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Registra blueprint e context processor
 app.register_blueprint(auth_bp)
 app.context_processor(subscription_context_processor)
 
 # Inizializza database
 db.init_app(app)
 scheduler = APScheduler()
+
+# =================== MIDDLEWARE PER PERFORMANCE MONITORING ===================
+@app.before_request
+def before_request():
+    """Traccia tempo di esecuzione richieste"""
+    g.request_start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    """Log richieste lente e aggiungi headers"""
+    if hasattr(g, 'request_start_time'):
+        elapsed = (time.time() - g.request_start_time) * 1000
+        
+        # Log richieste lente (> 1 secondo)
+        if elapsed > 1000:
+            logger.warning(
+                f"⚠️ SLOW REQUEST: {request.method} {request.path} "
+                f"took {elapsed:.2f}ms"
+            )
+        
+        # Aggiungi header X-Response-Time per debugging
+        response.headers['X-Response-Time'] = f"{elapsed:.2f}ms"
+    
+    return response
+
+# =================== DECORATORE CACHE ===================
+def cache_response(timeout=300, key_prefix=None):
+    """
+    Decorator per cachare risposte API
+    
+    Usage:
+        @cache_response(timeout=600, key_prefix='cot_history')
+        def get_cot_history(symbol):
+            ...
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Crea cache key unica basata su funzione e argomenti
+            cache_key = f"{key_prefix or f.__name__}:{':'.join(map(str, args))}"
+            
+            # Prova a prendere dalla cache
+            cached = cache.get(cache_key)
+            if cached is not None:
+                logger.debug(f"✅ Cache HIT: {cache_key}")
+                return cached
+            
+            # Esegui funzione e cachea risultato
+            logger.debug(f"❌ Cache MISS: {cache_key}")
+            result = f(*args, **kwargs)
+            cache.set(cache_key, result, timeout=timeout)
+            return result
+        
+        return decorated_function
+    return decorator
+
 
 # Setup Flask-Login
 from flask_login import LoginManager
@@ -118,6 +205,61 @@ class Prediction(db.Model):
     actual_result = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# =================== FUNZIONI DATABASE OTTIMIZZATE ===================
+def get_cot_history_optimized(symbol, limit=100):
+    """
+    Query COT ottimizzata con limit esplicito
+    """
+    try:
+        return (
+            COTData.query
+            .filter_by(symbol=symbol)
+            .order_by(COTData.date.desc())
+            .limit(limit)
+            .all()
+        )
+    except Exception as e:
+        logger.error(f"Errore query COT: {e}")
+        return []
+
+def get_latest_data_batch(symbols):
+    """
+    Recupera dati più recenti per più simboli in UNA query
+    """
+    from sqlalchemy import func
+    
+    try:
+        # Subquery per trovare date più recenti
+        subq = (
+            db.session.query(
+                COTData.symbol,
+                func.max(COTData.date).label('max_date')
+            )
+            .filter(COTData.symbol.in_(symbols))
+            .group_by(COTData.symbol)
+            .subquery()
+        )
+        
+        # Join per record completi
+        results = (
+            db.session.query(COTData)
+            .join(
+                subq,
+                db.and_(
+                    COTData.symbol == subq.c.symbol,
+                    COTData.date == subq.c.max_date
+                )
+            )
+            .all()
+        )
+        
+        return {r.symbol: r for r in results}
+    
+    except Exception as e:
+        logger.error(f"Errore batch query: {e}")
+        return {}
+    
+    
 # =================== CONFIGURAZIONE SIMBOLI COT ===================
 COT_SYMBOLS = {
     'GOLD': {
@@ -1527,7 +1669,28 @@ def health():
         'timestamp': datetime.utcnow().isoformat(),
         'database': 'connected'
     })
-
+# ⚡ HEALTH CHECK AVANZATO
+@app.route('/api/health')
+def health_check():
+    """Health check con metriche database"""
+    try:
+        db.session.execute('SELECT 1')
+        active_connections = 'N/A'
+        if 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']:
+            try:
+                result = db.session.execute('SELECT count(*) FROM pg_stat_activity')
+                active_connections = result.scalar()
+            except:
+                pass
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'active_connections': active_connections,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 # ==========================================
 # ERROR HANDLERS
 # ==========================================
@@ -1620,6 +1783,34 @@ def create_admin():
     
     print(f"✅ Admin creato: {email}")
 
+# =================== CREAZIONE INDICI DATABASE ===================
+def create_database_indexes():
+    """
+    Crea indici per ottimizzare query comuni
+    Esegui DOPO aver creato le tabelle
+    """
+    try:
+        with app.app_context():
+            # Indice composto per query COT più comuni
+            db.session.execute(
+                'CREATE INDEX IF NOT EXISTS idx_cot_symbol_date '
+                'ON cot_data(symbol, date DESC)'
+            )
+            
+            # Indice per predictions
+            db.session.execute(
+                'CREATE INDEX IF NOT EXISTS idx_pred_symbol_date '
+                'ON predictions(symbol, prediction_date DESC)'
+            )
+            
+            db.session.commit()
+            logger.info("✅ Indici database creati con successo")
+    
+    except Exception as e:
+        logger.error(f"Errore creazione indici: {e}")
+        db.session.rollback()
+        
+        
 if __name__ == '__main__':
     import os
     

@@ -65,7 +65,210 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('❌ Errore inizializzazione:', err);
     showAlert("Errore durante l'inizializzazione della dashboard", 'danger');
   }
-});
+})
+
+// =====================================================
+// SISTEMA DI DEBOUNCING E REQUEST COALESCING
+// =====================================================
+
+// Tracking richieste in corso
+const pendingRequests = new Map();
+const requestTimers = new Map();
+
+/**
+ * Debounce generico per evitare chiamate multiple
+ */
+function debounce(func, wait = 300) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+/**
+ * Request coalescing - evita richieste duplicate simultanee
+ */
+async function fetchWithCoalescing(url, key, options = {}) {
+  // Se c'è già una richiesta in corso per questa key, attendila
+  if (pendingRequests.has(key)) {
+    console.log(`⏳ Richiesta già in corso per ${key}, attendendo...`);
+    return pendingRequests.get(key);
+  }
+
+  // Crea nuova richiesta
+  const promise = fetch(url, options)
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    })
+    .finally(() => {
+      // Rimuovi dalla coda dopo completamento
+      pendingRequests.delete(key);
+    });
+
+  // Salva promise in corso
+  pendingRequests.set(key, promise);
+  return promise;
+}
+
+/**
+ * Wrapper per loadCotHistory con debouncing
+ */
+const loadCotHistoryDebounced = debounce(async (symbol) => {
+  const key = `cot-${symbol}`;
+  
+  try {
+    showLoadingState('cot');
+    const data = await fetchWithCoalescing(
+      `/api/cot/history/${encodeURIComponent(symbol)}`,
+      key
+    );
+    
+    if (data && data.data) {
+      renderCotData(data.data);
+    }
+  } catch (error) {
+    console.error('Errore loadCotHistory:', error);
+    showErrorState('cot', 'Errore caricamento dati COT');
+  } finally {
+    hideLoadingState('cot');
+  }
+}, 500); // Aspetta 500ms dopo l'ultimo click
+
+/**
+ * Wrapper per loadTechnical con debouncing
+ */
+const loadTechnicalDebounced = debounce(async (symbol) => {
+  const key = `tech-${symbol}`;
+  
+  try {
+    showLoadingState('technical');
+    const data = await fetchWithCoalescing(
+      `/api/technical/${encodeURIComponent(symbol)}`,
+      key
+    );
+    
+    if (data) {
+      renderTechnicalData(data);
+    }
+  } catch (error) {
+    console.error('Errore loadTechnical:', error);
+    showErrorState('technical', 'Errore caricamento analisi tecnica');
+  } finally {
+    hideLoadingState('technical');
+  }
+}, 500);
+
+/**
+ * Wrapper per loadPredictions con debouncing + rate limit
+ */
+const loadPredictionsDebounced = debounce(async (symbol) => {
+  const key = `pred-${symbol}`;
+  
+  // Rate limit: max 1 predizione ogni 5 secondi
+  const lastCall = requestTimers.get(key);
+  const now = Date.now();
+  
+  if (lastCall && (now - lastCall) < 5000) {
+    console.log(`⏸️ Rate limit: attendi ${Math.ceil((5000 - (now - lastCall)) / 1000)}s`);
+    return;
+  }
+  
+  requestTimers.set(key, now);
+  
+  try {
+    showLoadingState('predictions');
+    const data = await fetchWithCoalescing(
+      `/api/analysis/complete/${encodeURIComponent(symbol)}`,
+      key,
+      { method: 'POST' }
+    );
+    
+    if (data) {
+      renderPredictions(data);
+    }
+  } catch (error) {
+    console.error('Errore loadPredictions:', error);
+    showErrorState('predictions', 'Errore caricamento previsioni');
+  } finally {
+    hideLoadingState('predictions');
+  }
+}, 800); // Più lungo per le previsioni (costose)
+
+// =====================================================
+// LOADING & ERROR STATES
+// =====================================================
+
+function showLoadingState(section) {
+  const spinner = `<div class="text-center p-4">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Caricamento...</span>
+    </div>
+  </div>`;
+  
+  switch(section) {
+    case 'cot':
+      const tbody = document.getElementById('cotDataTable');
+      if (tbody) tbody.innerHTML = spinner;
+      break;
+    case 'technical':
+      const techDiv = document.getElementById('technicalAnalysis');
+      if (techDiv) techDiv.innerHTML = spinner;
+      break;
+    case 'predictions':
+      const predDiv = document.getElementById('predictions');
+      if (predDiv) predDiv.innerHTML = spinner;
+      break;
+  }
+}
+
+function hideLoadingState(section) {
+  // Il loading viene nascosto automaticamente dal render dei dati
+}
+
+function showErrorState(section, message) {
+  const errorHtml = `<div class="alert alert-danger m-3">${message}</div>`;
+  
+  switch(section) {
+    case 'cot':
+      const tbody = document.getElementById('cotDataTable');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7">${errorHtml}</td></tr>`;
+      break;
+    case 'technical':
+      const techDiv = document.getElementById('technicalAnalysis');
+      if (techDiv) techDiv.innerHTML = errorHtml;
+      break;
+    case 'predictions':
+      const predDiv = document.getElementById('predictions');
+      if (predDiv) predDiv.innerHTML = errorHtml;
+      break;
+  }
+}
+
+// =====================================================
+// RIMPIAZZA LE FUNZIONI ORIGINALI
+// =====================================================
+
+// Rimpiazza la funzione loadSymbolAnalysis originale
+window.loadSymbolAnalysis = function(symbol) {
+  console.log(`📊 Caricamento analisi per ${symbol}`);
+  currentSymbol = symbol;
+  
+  // Chiama le versioni debounced
+  loadCotHistoryDebounced(symbol);
+  loadTechnicalDebounced(symbol);
+  loadPredictionsDebounced(symbol);
+};
+
+// Export per uso esterno
+window.fetchWithCoalescing = fetchWithCoalescing;
+window.debounce = debounce;
+
 /* ========= CONFIGURAZIONE PIANO ========= */
 async function loadUserPlanConfig() {
   try {
