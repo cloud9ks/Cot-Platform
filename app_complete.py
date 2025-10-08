@@ -103,6 +103,98 @@ app.context_processor(subscription_context_processor)
 # Inizializza database
 db.init_app(app)
 scheduler = APScheduler()
+# ==========================================
+# OTTIMIZZAZIONI PERFORMANCE
+# ==========================================
+
+from threading import Lock
+from collections import defaultdict
+import time
+
+class RequestCoalescer:
+    """Unisce richieste duplicate simultanee"""
+    def __init__(self):
+        self._locks = defaultdict(Lock)
+        self._results = {}
+        self._timestamps = {}
+        self._result_ttl = 2
+    
+    def get_or_execute(self, key, func, *args, **kwargs):
+        lock = self._locks[key]
+        
+        if key in self._results:
+            result, timestamp = self._results[key], self._timestamps[key]
+            age = (time.time() - timestamp)
+            if age < self._result_ttl:
+                logger.info(f"🔄 Coalesced: {key}")
+                return result
+        
+        with lock:
+            if key in self._results:
+                result, timestamp = self._results[key], self._timestamps[key]
+                age = (time.time() - timestamp)
+                if age < self._result_ttl:
+                    return result
+            
+            logger.info(f"▶️ Executing: {key}")
+            start = time.time()
+            result = func(*args, **kwargs)
+            duration = (time.time() - start) * 1000
+            
+            self._results[key] = result
+            self._timestamps[key] = time.time()
+            
+            logger.info(f"✅ Done: {key} ({duration:.0f}ms)")
+            return result
+
+def get_smart_cache_timeout():
+    """Cache più lunga quando COT non si aggiorna"""
+    now = datetime.now()
+    weekday = now.weekday()
+    hour = now.hour
+    
+    if weekday == 1 and hour >= 20:  # Martedì sera
+        return 3600  # 1 ora
+    if weekday == 2 and hour < 12:  # Mercoledì mattina
+        return 7200  # 2 ore
+    return 86400  # 24 ore altri giorni
+
+def smart_cache_response(key_prefix):
+    """Decorator con cache intelligente + coalescing"""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            cache_key = f"{key_prefix}:{f.__name__}:{':'.join(map(str, args))}"
+            
+            # Check cache
+            cached = cache.get(cache_key)
+            if cached is not None:
+                logger.debug(f"✅ Cache HIT: {cache_key}")
+                return jsonify(cached)
+            
+            # Execute with coalescing
+            def execute():
+                result = f(*args, **kwargs)
+                # Estrai dati da jsonify se necessario
+                if hasattr(result, 'get_json'):
+                    data = result.get_json()
+                elif isinstance(result, tuple):
+                    data = result[0].get_json() if hasattr(result[0], 'get_json') else result[0]
+                else:
+                    data = result
+                
+                timeout = get_smart_cache_timeout()
+                cache.set(cache_key, data, timeout=timeout)
+                logger.info(f"💾 Cached {cache_key} (TTL: {timeout}s)")
+                return result
+            
+            return coalescer.get_or_execute(cache_key, execute)
+        return wrapper
+    return decorator
+
+# Istanza globale
+coalescer = RequestCoalescer()
+logger.info("✅ Request Coalescer inizializzato")
 
 # =================== MIDDLEWARE PER PERFORMANCE MONITORING ===================
 @app.before_request
@@ -895,7 +987,7 @@ if __name__ == "__main__":
 # Inizializza predictor
 predictor = create_production_predictor()
 @app.route('/api/technical/<symbol>')
-@cache_response(timeout=300, key_prefix='technical') 
+@smart_cache_response('technical')
 def get_technical_analysis(symbol):
     """Analisi tecnica completa per un simbolo"""
     try:
@@ -998,7 +1090,7 @@ def get_economic_calendar_api():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/synthesis/<symbol>')
-@cache_response(timeout=900, key_prefix='synthesis')
+@smart_cache_response('synthesis')
 def get_cot_synthesis(symbol):
     """Sintesi COT + Tecnica per un simbolo"""
     try:
@@ -1063,7 +1155,7 @@ def get_cot_synthesis(symbol):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/analysis/complete/<symbol>')
-@cache_response(timeout=1800, key_prefix='complete_analysis')
+@smart_cache_response('complete_analysis')
 def get_complete_analysis(symbol):
     """Analisi completa: COT + Tecnica + AI + ML"""
     try:
@@ -1256,7 +1348,122 @@ def get_system_status():
         logger.error(f"Errore system status: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ==========================================
+# API ADMIN: CACHE MANAGEMENT
+# ==========================================
 
+@app.route('/api/admin/cache/stats')
+@login_required
+def cache_stats_api():
+    """Statistiche cache - solo admin"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        stats = {
+            'timestamp': datetime.now().isoformat(),
+            'coalescer': {
+                'active_results': len(coalescer._results),
+                'active_locks': len(coalescer._locks),
+            },
+            'cache': {
+                'smart_timeout_current_seconds': get_smart_cache_timeout(),
+                'smart_timeout_current_hours': get_smart_cache_timeout() / 3600
+            },
+            'next_cot_update': get_next_cot_update_time()
+        }
+        
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/cache/clear', methods=['POST'])
+@login_required
+def clear_cache_api():
+    """Svuota cache - solo admin"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        cache.clear()
+        coalescer._results.clear()
+        coalescer._timestamps.clear()
+        coalescer._locks.clear()
+        
+        logger.info("🗑️ Cache cleared by admin")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Cache cleared successfully'
+        })
+    except Exception as e:
+        logger.error(f"Error clearing cache: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/cache/warm', methods=['POST'])
+@login_required
+def warm_cache_api():
+    """Forza cache warming manuale - solo admin"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Avvia warming in thread separato
+        def do_warming():
+            with app.app_context():
+                logger.info("🔥 Manual cache warming...")
+                priority_symbols = ['GOLD', 'USD', 'EUR']
+                
+                for symbol in priority_symbols:
+                    try:
+                        latest_cot = COTData.query.filter_by(symbol=symbol)\
+                            .order_by(COTData.date.desc()).first()
+                        
+                        if latest_cot:
+                            analysis_data = {
+                                'symbol': symbol,
+                                'timestamp': datetime.now().isoformat(),
+                                'cot_data': {
+                                    'net_position': latest_cot.net_position,
+                                    'sentiment_score': latest_cot.sentiment_score
+                                }
+                            }
+                            
+                            cache_key = f"complete_analysis:get_complete_analysis:{symbol}"
+                            timeout = get_smart_cache_timeout()
+                            cache.set(cache_key, analysis_data, timeout=timeout)
+                            logger.info(f"✅ Warmed {symbol}")
+                    except Exception as e:
+                        logger.error(f"Failed {symbol}: {e}")
+                
+                logger.info("🔥 Manual warming done")
+        
+        import threading
+        thread = threading.Thread(target=do_warming, daemon=True)
+        thread.start()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Cache warming started in background'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def get_next_cot_update_time():
+    """Calcola prossimo update COT (martedì 21:00)"""
+    now = datetime.now()
+    days_until_tuesday = (1 - now.weekday()) % 7
+    
+    if days_until_tuesday == 0 and now.hour >= 21:
+        days_until_tuesday = 7
+    
+    next_update = now + timedelta(days=days_until_tuesday)
+    next_update = next_update.replace(hour=21, minute=0, second=0, microsecond=0)
+    
+    return next_update.isoformat()
 # =================== FUNZIONI HELPER ===================
 # Aggiungi queste funzioni helper
 
@@ -1551,7 +1758,7 @@ def get_symbols():
 @app.route('/api/scrape/<symbol>')
 @login_required
 def scrape_symbol(symbol):
-    """Scraping manuale - solo admin"""
+    """Scraping manuale - solo admin - VERSIONE OTTIMIZZATA"""
     if not current_user.is_admin:
         return jsonify({'error': 'Accesso negato - solo admin'}), 403
     
@@ -1559,68 +1766,109 @@ def scrape_symbol(symbol):
         return jsonify({'error': 'Simbolo non valido'}), 400
     
     try:
-        logger.info(f"🚀 Scraping manuale per {symbol}...")
+        # Lock per scraping
+        import threading
+        if not hasattr(scrape_symbol, 'lock'):
+            scrape_symbol.lock = threading.Lock()
         
-        # 1. Scraping dati COT
-        data = scrape_cot_data(symbol)
-        
-        if not data:
-            return jsonify({'error': 'Scraping fallito'}), 500
-        
-        # 2. Salva nel database
-        existing = COTData.query.filter_by(
-            symbol=symbol,
-            date=data['date']
-        ).first()
-        
-        if not existing:
-            cot_entry = COTData(**data)
-            db.session.add(cot_entry)
-            db.session.commit()
-            logger.info(f"✅ Dati COT salvati per {symbol}")
-        else:
-            logger.info(f"ℹ️ Dati già presenti per {symbol}")
-        
-           # 3. ✅ USA GPTAnalyzer invece di analyze_with_gpt()
-        gpt_analysis = None
-        try:
-            if gpt_analyzer.client:  # Verifica che il client sia disponibile
-                gpt_analysis = gpt_analyzer.analyze_single_symbol(data)
+        with scrape_symbol.lock:
+            from collectors.cot_scraper import COTScraper
+            
+            logger.info(f"🔄 Scraping {symbol}...")
+            
+            # 1. Scraping COT
+            with COTScraper(headless=True) as scraper:
+                data = scraper.scrape_cot_data(symbol)
+                
+                if not data:
+                    return jsonify({'error': 'Scraping failed'}), 500
+                
+                # Ricalcola sentiment
+                data['sentiment_score'] = calculate_cot_sentiment(
+                    data['non_commercial_long'],
+                    data['non_commercial_short'], 
+                    data['commercial_long'],
+                    data['commercial_short']
+                )
+                logger.info(f"✅ Sentiment: {data['sentiment_score']:.2f}%")
+            
+            # 2. Salva COT nel DB
+            existing = COTData.query.filter_by(
+                symbol=symbol, date=data['date']
+            ).first()
+            
+            if not existing:
+                cot_entry = COTData(**data)
+                db.session.add(cot_entry)
+                db.session.commit()
+                logger.info(f"✅ COT data saved for {symbol}")
             else:
-                logger.warning("GPT Analyzer non disponibile - usando fallback")
+                logger.info(f"ℹ️ COT data already exists for {symbol}")
+            
+            # 3. ⚡ GPT Pre-calcolo (CHIAVE PER PERFORMANCE!)
+            gpt_analysis = None
+            try:
+                if gpt_analyzer.client:
+                    logger.info(f"🤖 Running GPT analysis for {symbol}...")
+                    start_gpt = time.time()
+                    gpt_analysis = gpt_analyzer.analyze_single_symbol(data)
+                    gpt_duration = (time.time() - start_gpt) * 1000
+                    logger.info(f"✅ GPT completed in {gpt_duration:.0f}ms")
+                else:
+                    logger.warning("GPT Analyzer not available - using fallback")
+                    gpt_analysis = gpt_analyzer._create_fallback_analysis(data)
+            except Exception as e:
+                logger.error(f"❌ GPT error: {e}")
                 gpt_analysis = gpt_analyzer._create_fallback_analysis(data)
-        except Exception as e:
-            logger.error(f"❌ Errore GPT analysis: {e}")
-            gpt_analysis = gpt_analyzer._create_fallback_analysis(data)
-        
-        # 4. Salva predizione
-        if gpt_analysis:
-            prediction = Prediction(
-                symbol=symbol,
-                prediction_date=datetime.now(),
-                predicted_direction=gpt_analysis.get('direction', 'NEUTRAL'),
-                confidence=gpt_analysis.get('confidence', 50),
-                ml_score=None,
-                gpt_analysis=json.dumps(gpt_analysis) if isinstance(gpt_analysis, dict) else gpt_analysis
-            )
-            db.session.add(prediction)
-            db.session.commit()
-            logger.info(f"✅ Predizione salvata per {symbol}")
-        
-        return jsonify({
-            'status': 'success',
-            'message': f'Analisi completata per {symbol}',
-            'data': data,
-            'gpt_analysis': gpt_analysis
-        })
-        
+            
+            # 4. Salva predizione con GPT
+            if gpt_analysis:
+                prediction = Prediction(
+                    symbol=symbol,
+                    prediction_date=datetime.now(),
+                    predicted_direction=gpt_analysis.get('direction', 'NEUTRAL'),
+                    confidence=gpt_analysis.get('confidence', 50),
+                    ml_score=None,
+                    gpt_analysis=json.dumps(gpt_analysis) if isinstance(gpt_analysis, dict) else gpt_analysis
+                )
+                db.session.add(prediction)
+                db.session.commit()
+                logger.info(f"✅ Prediction saved for {symbol}")
+            
+            # 5. ⚡ INVALIDA CACHE (CRITICO!)
+            cache_keys = [
+                f"complete_analysis:get_complete_analysis:{symbol}",
+                f"technical:get_technical_analysis:{symbol}",
+                f"cot_data:get_data:{symbol}",
+                f"synthesis:get_cot_synthesis:{symbol}"
+            ]
+            
+            for key in cache_keys:
+                try:
+                    cache.delete(key)
+                    logger.info(f"🗑️ Cache invalidated: {key}")
+                except Exception as e:
+                    logger.warning(f"Failed to invalidate {key}: {e}")
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'Analysis completed for {symbol}',
+                'data': {
+                    'symbol': symbol,
+                    'date': data['date'].isoformat() if isinstance(data['date'], datetime) else data['date'],
+                    'sentiment_score': data['sentiment_score'],
+                    'net_position': data['net_position']
+                },
+                'gpt_analysis': gpt_analysis
+            })
+            
     except Exception as e:
-        logger.error(f"❌ Errore scraping {symbol}: {e}")
+        logger.error(f"❌ Error scraping {symbol}: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
 @app.route('/api/data/<symbol>')
 @login_required
-@cache_response(timeout=3600, key_prefix='cot_data')
+@smart_cache_response('cot_data')
 def get_data(symbol):
     """Dati storici simbolo"""
     days = request.args.get('days', 30, type=int)
@@ -1740,25 +1988,101 @@ with app.app_context():
     try:
         db.create_all()
         print("✅ Database creato/verificato")
-    except Exception as e:
-        print(f"⚠️ Tabelle già esistenti o errore DB: {e}")
-        # Continua comunque - le tabelle esistono già
         
-# Inizializza scheduler
-scheduler.init_app(app)
-scheduler.start()
-
-# Aggiungi job schedulato (ogni marted alle 21:00)
-scheduler.add_job(
-    id='cot_scraping',
-    func=scheduled_scraping,
-    trigger='cron',
-    day_of_week='tue',
-    hour=21,
-    minute=0
-)
-
-print(" Sistema inizializzato")
+        # ⚡ CACHE WARMING - Pre-carica dati più richiesti
+        def warm_cache_background():
+            """Cache warming in background per non bloccare l'avvio"""
+            import time
+            time.sleep(3)  # Aspetta che l'app sia completamente pronta
+            
+            with app.app_context():
+                logger.info("🔥 Cache warming started...")
+                priority_symbols = ['GOLD', 'USD', 'EUR']
+                
+                for symbol in priority_symbols:
+                    try:
+                        logger.info(f"🔥 Warming cache for {symbol}...")
+                        
+                        # Recupera ultimo dato COT
+                        latest_cot = COTData.query.filter_by(symbol=symbol)\
+                            .order_by(COTData.date.desc()).first()
+                        
+                        if not latest_cot:
+                            logger.warning(f"⚠️ No COT data for {symbol}, skipping")
+                            continue
+                        
+                        # Costruisci analisi base
+                        analysis_data = {
+                            'symbol': symbol,
+                            'timestamp': datetime.now().isoformat(),
+                            'status': 'SUCCESS',
+                            'cot_data': {
+                                'date': latest_cot.date.isoformat(),
+                                'net_position': latest_cot.net_position,
+                                'sentiment_score': latest_cot.sentiment_score,
+                                'non_commercial_long': latest_cot.non_commercial_long,
+                                'non_commercial_short': latest_cot.non_commercial_short,
+                                'commercial_long': latest_cot.commercial_long,
+                                'commercial_short': latest_cot.commercial_short
+                            }
+                        }
+                        
+                        # Aggiungi Technical Analysis se disponibile
+                        if TECHNICAL_ANALYZER_AVAILABLE:
+                            try:
+                                tech_analysis = analyze_symbol_complete(symbol)
+                                analysis_data['technical_analysis'] = tech_analysis
+                            except Exception as e:
+                                logger.warning(f"Technical analysis failed for {symbol}: {e}")
+                        
+                        # Aggiungi ultima predizione GPT se disponibile
+                        last_pred = Prediction.query.filter_by(symbol=symbol)\
+                            .order_by(Prediction.prediction_date.desc()).first()
+                        
+                        if last_pred and last_pred.gpt_analysis:
+                            try:
+                                gpt_json = json.loads(last_pred.gpt_analysis) \
+                                           if isinstance(last_pred.gpt_analysis, str) else last_pred.gpt_analysis
+                                analysis_data['gpt_analysis'] = gpt_json
+                            except Exception as e:
+                                logger.warning(f"Failed to parse GPT analysis: {e}")
+                        
+                        # Aggiungi ML prediction
+                        if predictor and predictor.is_trained:
+                            try:
+                                cot_dict = {
+                                    'non_commercial_long': latest_cot.non_commercial_long,
+                                    'non_commercial_short': latest_cot.non_commercial_short,
+                                    'commercial_long': latest_cot.commercial_long,
+                                    'commercial_short': latest_cot.commercial_short,
+                                    'net_position': latest_cot.net_position,
+                                    'sentiment_score': latest_cot.sentiment_score
+                                }
+                                ml_pred = predictor.predict(cot_dict)
+                                analysis_data['ml_prediction'] = ml_pred
+                            except Exception as e:
+                                logger.warning(f"ML prediction failed: {e}")
+                        
+                        # Salva in cache
+                        cache_key = f"complete_analysis:get_complete_analysis:{symbol}"
+                        timeout = get_smart_cache_timeout()
+                        cache.set(cache_key, analysis_data, timeout=timeout)
+                        
+                        logger.info(f"✅ Cache warmed for {symbol} (TTL: {timeout}s)")
+                        
+                    except Exception as e:
+                        logger.error(f"❌ Failed to warm cache for {symbol}: {e}")
+                
+                logger.info("🔥 Cache warming completed!")
+        
+        # Avvia cache warming in thread separato per non bloccare l'avvio
+        import threading
+        warming_thread = threading.Thread(target=warm_cache_background, daemon=True)
+        warming_thread.start()
+        logger.info("🚀 Cache warming thread started")
+        
+    except Exception as e:
+        logger.error(f"⚠️ Initialization error: {e}")
 
 # =================== CLI COMMANDS ===================
 @app.cli.command('create-admin')
