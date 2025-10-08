@@ -8,6 +8,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_apscheduler import APScheduler
 from flask_caching import Cache
+from flask_login import LoginManager, login_required, current_user  # ✅ AGGIUNGI QUI
 from functools import wraps
 from datetime import datetime, timedelta
 import pandas as pd
@@ -33,7 +34,6 @@ from models import db, User, init_db, SUBSCRIPTION_PLANS
 from auth_routes import auth_bp
 from decorators import subscription_context_processor
 from analysis.gpt_analyzer import GPTAnalyzer
-
 # Setup logging
 logger = logging.getLogger(__name__)
 
