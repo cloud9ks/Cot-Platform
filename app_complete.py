@@ -18,6 +18,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from cache_manager import GLOBAL_CACHE, cached
 import time
 import os
 import re
@@ -988,6 +989,7 @@ if __name__ == "__main__":
 predictor = create_production_predictor()
 @app.route('/api/technical/<symbol>')
 @smart_cache_response('technical')
+@cached(category='technical', ttl=300)  # Cache 5 minuti
 def get_technical_analysis(symbol):
     """Analisi tecnica completa per un simbolo"""
     try:
@@ -1020,6 +1022,7 @@ def get_technical_analysis(symbol):
         }), 500
 
 @app.route('/api/economic/current')
+@cached(category='economic', ttl=1800)  # Cache 30 minuti
 def get_current_economic_data():
     """Dati economici attuali con sentiment"""
     try:
@@ -1067,6 +1070,7 @@ def get_current_economic_data():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/economic/calendar')
+@cached(category='economic', ttl=1800)  # Cache 30 minuti
 def get_economic_calendar_api():
     """Calendario economico eventi importanti"""
     try:
@@ -1091,6 +1095,7 @@ def get_economic_calendar_api():
 
 @app.route('/api/synthesis/<symbol>')
 @smart_cache_response('synthesis')
+@cached(category='synthesis', ttl=600)  # <-- AGGIUNGI QUESTA RIGA
 def get_cot_synthesis(symbol):
     """Sintesi COT + Tecnica per un simbolo"""
     try:
@@ -1156,6 +1161,7 @@ def get_cot_synthesis(symbol):
 
 @app.route('/api/analysis/complete/<symbol>')
 @smart_cache_response('complete_analysis')
+@cached(category='complete', ttl=600)  # Cache 10 minuti
 def get_complete_analysis(symbol):
     """Analisi completa: COT + Tecnica + AI + ML"""
     try:
@@ -1718,6 +1724,7 @@ def update_preferences():
 
 @app.route('/api/symbols')
 @login_required
+@cached(category='default', ttl=86400)  # Cache 24 ore
 def get_symbols():
     """Lista simboli disponibili"""
     # Admin o Professional: tutti i simboli
@@ -1869,6 +1876,7 @@ def scrape_symbol(symbol):
 @app.route('/api/data/<symbol>')
 @login_required
 @smart_cache_response('cot_data')
+@cached(category='cot_data', ttl=3600)  # Cache 1 ora
 def get_data(symbol):
     """Dati storici simbolo"""
     days = request.args.get('days', 30, type=int)
@@ -1889,6 +1897,7 @@ def get_data(symbol):
 
 @app.route('/api/predictions/<symbol>')
 @login_required
+@cached(category='prediction', ttl=1800)  # Cache 30 minuti
 def get_predictions(symbol):
     """Predizioni simbolo - solo Professional o Admin"""
     # ✅ ADMIN bypassa tutto
@@ -2137,7 +2146,26 @@ def create_database_indexes():
     except Exception as e:
         logger.error(f"Errore creazione indici: {e}")
         db.session.rollback()
-        
+  
+@app.route('/api/cache/stats')
+def cache_stats():
+    """Mostra statistiche cache"""
+    return jsonify(GLOBAL_CACHE.get_stats())
+
+@app.route('/api/cache/clear', methods=['POST'])
+@login_required
+def cache_clear():
+    """Pulisce cache - solo utenti loggati"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Solo admin'}), 403
+    
+    GLOBAL_CACHE.clear_all()
+    cache.clear()  # Pulisci anche la cache Flask
+    
+    return jsonify({
+        'status': 'success',
+        'message': 'Cache cleared'
+    })      
         
 if __name__ == '__main__':
     import os

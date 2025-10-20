@@ -1,0 +1,47 @@
+/* Loading states */
+.data-container.loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.sentiment-bar-fill {
+    transition: width 0.5s ease;
+    height: 100%;
+    border-radius: 4px;
+}
+
+.sentiment-bar-fill.bullish {
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+}
+
+.sentiment-bar-fill.bearish {
+    background: linear-gradient(90deg, #f44336, #ff9800);
+}
+
+.sentiment-bar-fill.neutral {
+    background: linear-gradient(90deg, #2196f3, #03a9f4);
+}
+
+.prediction-bullish { color: #4caf50; font-weight: bold; }
+.prediction-bearish { color: #f44336; font-weight: bold; }
+.prediction-neutral { color: #2196f3; }
+
+/* Error message */
+#error-message {
+    display: none;
+    background: #f44336;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* Loader */
+#main-loader {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+}
