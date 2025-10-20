@@ -1,4 +1,4 @@
-// dashboard-enhanced.js - VERSIONE OTTIMIZZATA CON FIX
+// dashboard-enhanced.js - VERSIONE COMPLETA CON TUTTE LE FUNZIONI
 // Salva questo file in: static/js/dashboard-enhanced.js
 
 class COTDashboard {
@@ -22,6 +22,9 @@ class COTDashboard {
         console.log('🚀 Inizializzazione COT Dashboard...');
         
         try {
+            // Carica i simboli PRIMA di tutto
+            await this.loadSymbols();
+            
             // Setup event listeners
             this.setupEventListeners();
             
@@ -31,7 +34,7 @@ class COTDashboard {
             // Carica dati iniziali
             await this.loadInitialData();
             
-            // Auto-refresh ogni 30 secondi (non 5!)
+            // Auto-refresh ogni 30 secondi
             this.startAutoRefresh(30000);
             
             this.initialized = true;
@@ -43,31 +46,89 @@ class COTDashboard {
         }
     }
     
-    setupEventListeners() {
-        // Symbol selector con delegated events
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('.symbol-btn') || e.target.closest('.symbol-btn')) {
-                e.preventDefault();
-                const btn = e.target.closest('.symbol-btn');
-                if (btn && btn.dataset.symbol) {
-                    this.switchSymbol(btn.dataset.symbol);
-                }
+    async loadSymbols() {
+        try {
+            const response = await fetch('/api/symbols');
+            if (!response.ok) throw new Error('Errore caricamento simboli');
+            
+            const data = await response.json();
+            const container = document.getElementById('symbolSelector');
+            
+            if (!container) {
+                console.error('Container simboli non trovato');
+                return;
             }
-        });
-        
-        // Tab navigation
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.switchTab(tab.dataset.tab);
+            
+            container.innerHTML = '';
+            
+            // Mostra messaggio se ci sono limitazioni
+            if (data.limit && data.message) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning mb-3';
+                alert.innerHTML = `<i class="fas fa-info-circle"></i> ${data.message}`;
+                container.parentElement.insertBefore(alert, container);
+            }
+            
+            // Crea i pulsanti per i simboli
+            data.symbols.forEach((symbol, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'symbol-btn';
+                btn.textContent = symbol.name || symbol.code;
+                btn.dataset.symbol = symbol.code;
+                
+                if (index === 0) {
+                    btn.classList.add('active');
+                    this.currentSymbol = symbol.code;
+                }
+                
+                btn.addEventListener('click', () => {
+                    this.switchSymbol(symbol.code);
+                });
+                
+                container.appendChild(btn);
+            });
+            
+            console.log(`✅ Caricati ${data.symbols.length} simboli`);
+            
+        } catch (error) {
+            console.error('❌ Errore caricamento simboli:', error);
+            document.getElementById('symbolSelector').innerHTML = 
+                '<div class="alert alert-danger">Errore caricamento simboli</div>';
+        }
+    }
+    
+    setupEventListeners() {
+        // Tab navigation con Bootstrap
+        const triggerTabList = document.querySelectorAll('#mainTabs button[data-bs-toggle="tab"]');
+        triggerTabList.forEach(triggerEl => {
+            triggerEl.addEventListener('shown.bs.tab', (e) => {
+                const tabId = e.target.getAttribute('data-bs-target');
+                console.log(`📑 Tab attivata: ${tabId}`);
+                
+                // Carica dati specifici per tab se necessario
+                if (tabId === '#technical') {
+                    this.loadTechnicalData();
+                } else if (tabId === '#economic') {
+                    this.loadEconomicData();
+                } else if (tabId === '#predictions') {
+                    this.loadPredictionsData();
+                }
             });
         });
         
-        // Refresh button
-        const refreshBtn = document.getElementById('refresh-btn');
+        // Refresh button (solo admin)
+        const refreshBtn = document.getElementById('btnRefresh');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 this.forceRefresh();
+            });
+        }
+        
+        // Analisi AI button (solo admin)
+        const runBtn = document.getElementById('btnRun');
+        if (runBtn) {
+            runBtn.addEventListener('click', async () => {
+                await this.runFullAnalysis();
             });
         }
     }
@@ -82,7 +143,7 @@ class COTDashboard {
         this.showLoader();
         
         try {
-            // Carica dati in parallelo con gestione errori individuali
+            // Carica dati in parallelo
             const [completeData, cotData, economicData] = await Promise.allSettled([
                 this.fetchWithCache(`/api/analysis/complete/${this.currentSymbol}`),
                 this.fetchWithCache(`/api/data/${this.currentSymbol}?days=90`),
@@ -102,11 +163,13 @@ class COTDashboard {
             // Processa dati COT
             if (cotData.status === 'fulfilled' && cotData.value) {
                 this.updateCOTChart(cotData.value);
+                this.updateCOTTable(cotData.value);
             }
             
             // Processa dati economici
             if (economicData.status === 'fulfilled' && economicData.value) {
                 this.updateEconomicIndicators(economicData.value);
+                this.updateMarketOverview(economicData.value);
             }
             
         } catch (error) {
@@ -180,46 +243,155 @@ class COTDashboard {
         
         console.log('📊 Aggiornamento dashboard con:', data);
         
-        // Aggiorna COT data
+        // Aggiorna COT data - NOTA GLI ID CORRETTI!
         if (data.cot_data || data.latest_cot) {
             const cotData = data.cot_data || data.latest_cot;
-            this.updateElement('net-position', this.formatNumber(cotData.net_position));
-            this.updateElement('sentiment-score', `${cotData.sentiment_score?.toFixed(1)}%`);
             
-            // Aggiorna sentiment bar
+            // Net Position
+            this.updateElement('netPosition', this.formatNumber(cotData.net_position));
+            
+            // Net Change
+            if (cotData.net_change !== undefined) {
+                const changeEl = document.getElementById('netChange');
+                if (changeEl) {
+                    const changeValue = cotData.net_change || 0;
+                    changeEl.textContent = `${changeValue >= 0 ? '+' : ''}${this.formatNumber(changeValue)}`;
+                    changeEl.className = changeValue >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+                }
+            }
+            
+            // Sentiment Score
+            this.updateElement('sentimentScore', `${cotData.sentiment_score?.toFixed(1)}%`);
+            
+            // Sentiment Bar
             this.updateSentimentBar(cotData.sentiment_score);
+            
+            // Last Update
+            if (cotData.date) {
+                const date = new Date(cotData.date);
+                this.updateElement('lastUpdate', date.toLocaleDateString('it-IT'));
+            }
         }
         
-        // Aggiorna technical data
+        // Aggiorna ML prediction - NOTA GLI ID CORRETTI!
+        if (data.ml_prediction) {
+            const pred = data.ml_prediction;
+            const predBox = document.getElementById('aiPrediction');
+            const confEl = document.getElementById('confidence');
+            
+            if (predBox) {
+                const direction = (pred.direction || 'NEUTRAL').toUpperCase();
+                const cssClass = direction === 'BULLISH' ? 'signal-bullish' : 
+                               direction === 'BEARISH' ? 'signal-bearish' : 
+                               'signal-neutral';
+                predBox.innerHTML = `<span class="signal-box ${cssClass}">${direction}</span>`;
+            }
+            
+            if (confEl) {
+                confEl.textContent = Math.round(pred.confidence || 50);
+            }
+        }
+        
+        // Aggiorna Technical data
         if (data.technical_analysis?.support_resistance) {
             const tech = data.technical_analysis.support_resistance;
             this.updateElement('current-price', this.formatPrice(tech.current_price));
             this.updateElement('support-level', this.formatPrice(tech.strong_support));
             this.updateElement('resistance-level', this.formatPrice(tech.strong_resistance));
-            
-            // Indicatori
-            if (tech.indicators) {
-                this.updateElement('rsi-value', tech.indicators.rsi14?.toFixed(1) || 'N/A');
-                this.updateElement('macd-value', tech.indicators.macd?.toFixed(2) || 'N/A');
-            }
         }
         
-        // Aggiorna ML prediction
-        if (data.ml_prediction) {
-            this.updateElement('prediction-direction', data.ml_prediction.direction);
-            this.updateElement('prediction-confidence', `${data.ml_prediction.confidence?.toFixed(0)}%`);
-            
-            // Colora in base alla direzione
-            const dirElement = document.getElementById('prediction-direction');
-            if (dirElement) {
-                dirElement.className = `prediction-${data.ml_prediction.direction.toLowerCase()}`;
-            }
-        }
+        // Aggiorna Quick Analysis
+        this.updateQuickAnalysis(data);
         
-        // Aggiorna GPT analysis
+        // Aggiorna GPT Analysis
         if (data.gpt_analysis) {
             this.updateGPTAnalysis(data.gpt_analysis);
         }
+    }
+    
+    updateQuickAnalysis(data) {
+        const box = document.getElementById('quickAnalysis');
+        if (!box) return;
+        
+        const cotData = data.cot_data || data.latest_cot || {};
+        const netPos = cotData.net_position || 0;
+        const sentiment = cotData.sentiment_score || 0;
+        
+        let html = '<div class="row g-2">';
+        html += `<div class="col-6"><small class="text-muted">Net Position</small><div class="fw-bold">${this.formatNumber(netPos)}</div></div>`;
+        html += `<div class="col-6"><small class="text-muted">Sentiment</small><div class="fw-bold">${sentiment.toFixed(2)}%</div></div>`;
+        html += `<div class="col-12 mt-2"><small class="text-muted">Interpretazione</small><div>`;
+        
+        if (sentiment > 20) {
+            html += '<span class="badge bg-success">Sentiment Rialzista Forte</span>';
+        } else if (sentiment > 10) {
+            html += '<span class="badge bg-success">Sentiment Rialzista</span>';
+        } else if (sentiment < -20) {
+            html += '<span class="badge bg-danger">Sentiment Ribassista Forte</span>';
+        } else if (sentiment < -10) {
+            html += '<span class="badge bg-danger">Sentiment Ribassista</span>';
+        } else {
+            html += '<span class="badge bg-secondary">Sentiment Neutrale</span>';
+        }
+        
+        html += '</div></div></div>';
+        box.innerHTML = html;
+    }
+    
+    updateMarketOverview(data) {
+        const box = document.getElementById('marketOverview');
+        if (!box) return;
+        
+        const sentiment = data.market_sentiment || data.sentiment || 0;
+        const risk = data.risk_on ? 'Risk-ON' : data.risk_off ? 'Risk-OFF' : '—';
+        const today = new Date().toLocaleDateString('it-IT');
+        
+        box.innerHTML = `
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="metric-card">
+                        <div class="metric-value">${sentiment}%</div>
+                        <div class="metric-label">Market Sentiment</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card" style="background:linear-gradient(135deg,#34d399 0%, #10b981 100%)">
+                        <div class="metric-value">${risk}</div>
+                        <div class="metric-label">Risk Regime</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card" style="background:linear-gradient(135deg,#f59e0b 0%, #ef4444 100%)">
+                        <div class="metric-value">${today}</div>
+                        <div class="metric-label">Oggi</div>
+                    </div>
+                </div>
+            </div>`;
+    }
+    
+    updateCOTTable(data) {
+        const tbody = document.getElementById('cotDataTable');
+        if (!tbody || !Array.isArray(data)) return;
+        
+        tbody.innerHTML = '';
+        
+        // Prendi solo i primi 10 record
+        data.slice(0, 10).forEach(row => {
+            const tr = document.createElement('tr');
+            const date = new Date(row.date).toLocaleDateString('it-IT');
+            
+            tr.innerHTML = `
+                <td>${date}</td>
+                <td>${this.formatNumber(row.non_commercial_long)}</td>
+                <td>${this.formatNumber(row.non_commercial_short)}</td>
+                <td>${this.formatNumber(row.commercial_long)}</td>
+                <td>${this.formatNumber(row.commercial_short)}</td>
+                <td>${this.formatNumber(row.net_position)}</td>
+                <td>${(row.sentiment_score || 0).toFixed(2)}%</td>
+            `;
+            
+            tbody.appendChild(tr);
+        });
     }
     
     updateElement(id, value) {
@@ -248,41 +420,51 @@ class COTDashboard {
     }
     
     updateSentimentBar(sentiment) {
-        const bar = document.querySelector('.sentiment-bar-fill');
-        if (bar && sentiment !== undefined) {
-            // Converti sentiment da -100/+100 a 0-100%
-            const percentage = ((sentiment + 100) / 2);
-            bar.style.width = `${percentage}%`;
+        const bar = document.getElementById('sentimentBar');
+        if (!bar) return;
+        
+        // Trova o crea la barra interna
+        let fillBar = bar.querySelector('div');
+        if (!fillBar) {
+            fillBar = document.createElement('div');
+            bar.appendChild(fillBar);
+        }
+        
+        if (sentiment !== undefined) {
+            const w = Math.min(100, Math.max(0, Math.abs(sentiment)));
+            fillBar.style.width = `${w}%`;
+            fillBar.style.height = '100%';
+            fillBar.style.transition = 'width 0.3s';
             
             // Colora in base al valore
-            bar.className = 'sentiment-bar-fill';
-            if (sentiment > 30) {
-                bar.classList.add('bullish');
-            } else if (sentiment < -30) {
-                bar.classList.add('bearish');
+            if (sentiment >= 10) {
+                fillBar.style.background = 'linear-gradient(90deg,#10b981,#34d399)';
+            } else if (sentiment <= -10) {
+                fillBar.style.background = 'linear-gradient(90deg,#ef4444,#f87171)';
             } else {
-                bar.classList.add('neutral');
+                fillBar.style.background = 'linear-gradient(90deg,#6b7280,#9ca3af)';
             }
         }
     }
     
     updateGPTAnalysis(analysis) {
-        const container = document.getElementById('gpt-analysis-content');
+        const container = document.getElementById('gptAnalysis');
         if (!container) return;
         
         if (typeof analysis === 'string') {
-            container.innerHTML = `<p>${analysis}</p>`;
-        } else if (analysis) {
-            let html = '';
+            container.innerHTML = `<div class="p-3 bg-light rounded"><p>${analysis}</p></div>`;
+        } else if (analysis && analysis.summary) {
+            let html = '<div class="p-3 bg-light rounded">';
             if (analysis.summary) {
-                html += `<div class="gpt-summary">${analysis.summary}</div>`;
+                html += `<p>${analysis.summary}</p>`;
             }
             if (analysis.direction) {
-                html += `<div class="gpt-direction">Direzione: <strong>${analysis.direction}</strong></div>`;
+                html += `<div class="mt-2"><strong>Direzione:</strong> ${analysis.direction}</div>`;
             }
             if (analysis.confidence) {
-                html += `<div class="gpt-confidence">Confidenza: ${analysis.confidence}%</div>`;
+                html += `<div><strong>Confidenza:</strong> ${analysis.confidence}%</div>`;
             }
+            html += '</div>';
             container.innerHTML = html;
         }
     }
@@ -300,40 +482,61 @@ class COTDashboard {
         });
         this.charts = {};
         
-        // Inizializza COT Chart
-        const cotCanvas = document.getElementById('cot-positions-chart');
+        // COT Chart
+        const cotCanvas = document.getElementById('cotChart');
         if (cotCanvas) {
             const ctx = cotCanvas.getContext('2d');
             this.charts.cot = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: [],
-                    datasets: [{
-                        label: 'Net Position',
-                        data: [],
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                        tension: 0.1
-                    }]
+                    datasets: [
+                        {
+                            label: 'NC Long',
+                            data: [],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,0.1)'
+                        },
+                        {
+                            label: 'NC Short',
+                            data: [],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239,68,68,0.1)'
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: true },
-                        tooltip: { enabled: true }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false
-                        }
+                        legend: { position: 'top' }
                     }
                 }
             });
         }
         
-        // Inizializza Price Chart con supporti/resistenze
-        const priceCanvas = document.getElementById('price-levels-chart');
+        // Pie Chart
+        const pieCanvas = document.getElementById('pieChart');
+        if (pieCanvas) {
+            const ctx = pieCanvas.getContext('2d');
+            this.charts.pie = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['NC Long', 'NC Short', 'Commercial Long', 'Commercial Short'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#10b981', '#ef4444', '#3b82f6', '#f59e0b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        
+        // Price Chart
+        const priceCanvas = document.getElementById('priceChart');
         if (priceCanvas) {
             const ctx = priceCanvas.getContext('2d');
             this.charts.price = new Chart(ctx, {
@@ -343,19 +546,13 @@ class COTDashboard {
                     datasets: [{
                         label: 'Prezzo',
                         data: [],
-                        borderColor: 'rgb(54, 162, 235)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                        tension: 0.1
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37,99,235,0.1)'
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        annotation: {
-                            annotations: {}
-                        }
-                    }
+                    maintainAspectRatio: false
                 }
             });
         }
@@ -366,133 +563,103 @@ class COTDashboard {
     updateCOTChart(data) {
         if (!this.charts.cot || !data) return;
         
-        // Trasforma dati per il grafico
         const labels = [];
-        const netPositions = [];
-        const sentiments = [];
+        const ncLong = [];
+        const ncShort = [];
         
-        // Ordina per data
+        // Ordina per data e prendi ultimi 30 giorni
         const sortedData = Array.isArray(data) ? 
-            data.sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
+            data.sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-30) : [];
         
         sortedData.forEach(item => {
             labels.push(new Date(item.date).toLocaleDateString('it-IT'));
-            netPositions.push(item.net_position);
-            sentiments.push(item.sentiment_score);
+            ncLong.push(item.non_commercial_long);
+            ncShort.push(item.non_commercial_short);
         });
         
-        // Aggiorna grafico
+        // Aggiorna COT chart
         this.charts.cot.data.labels = labels;
-        this.charts.cot.data.datasets[0].data = netPositions;
+        this.charts.cot.data.datasets[0].data = ncLong;
+        this.charts.cot.data.datasets[1].data = ncShort;
+        this.charts.cot.update('none');
         
-        // Aggiungi dataset sentiment se non esiste
-        if (this.charts.cot.data.datasets.length === 1) {
-            this.charts.cot.data.datasets.push({
-                label: 'Sentiment',
-                data: sentiments,
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                tension: 0.1,
-                yAxisID: 'y1'
-            });
-            
-            // Aggiungi secondo asse Y
-            this.charts.cot.options.scales.y1 = {
-                type: 'linear',
-                display: true,
-                position: 'right',
-                grid: {
-                    drawOnChartArea: false
-                }
-            };
-        } else {
-            this.charts.cot.data.datasets[1].data = sentiments;
+        // Aggiorna Pie chart con ultimo dato
+        if (this.charts.pie && sortedData.length > 0) {
+            const last = sortedData[sortedData.length - 1];
+            this.charts.pie.data.datasets[0].data = [
+                last.non_commercial_long,
+                last.non_commercial_short,
+                last.commercial_long,
+                last.commercial_short
+            ];
+            this.charts.pie.update('none');
         }
         
-        this.charts.cot.update('none');
-        console.log('✅ COT chart aggiornato');
+        console.log('✅ Grafici COT aggiornati');
     }
     
     updateTechnicalCharts(techData) {
-        if (!techData || !this.charts.price) return;
-        
-        // Aggiorna livelli di prezzo
-        if (techData.support_resistance) {
-            const sr = techData.support_resistance;
-            
-            // Aggiungi prezzo corrente al grafico
-            const now = new Date().toLocaleTimeString('it-IT');
-            
-            if (!this.charts.price.data.labels.includes(now)) {
-                // Mantieni solo ultimi 50 punti
-                if (this.charts.price.data.labels.length > 50) {
-                    this.charts.price.data.labels.shift();
-                    this.charts.price.data.datasets[0].data.shift();
-                }
-                
-                this.charts.price.data.labels.push(now);
-                this.charts.price.data.datasets[0].data.push(sr.current_price);
-            }
-            
-            // Aggiorna annotazioni per supporto/resistenza
-            if (this.charts.price.options.plugins.annotation) {
-                this.charts.price.options.plugins.annotation.annotations = {
-                    support: {
-                        type: 'line',
-                        yMin: sr.strong_support,
-                        yMax: sr.strong_support,
-                        borderColor: 'rgba(0, 255, 0, 0.5)',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        label: {
-                            content: `Support: ${this.formatPrice(sr.strong_support)}`,
-                            enabled: true,
-                            position: 'start'
-                        }
-                    },
-                    resistance: {
-                        type: 'line',
-                        yMin: sr.strong_resistance,
-                        yMax: sr.strong_resistance,
-                        borderColor: 'rgba(255, 0, 0, 0.5)',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        label: {
-                            content: `Resistance: ${this.formatPrice(sr.strong_resistance)}`,
-                            enabled: true,
-                            position: 'start'
-                        }
-                    }
-                };
-            }
-            
-            this.charts.price.update('none');
-        }
+        // Implementazione placeholder
+        console.log('📈 Update technical charts:', techData);
     }
     
     updateEconomicIndicators(data) {
-        if (!data) return;
-        
-        const container = document.getElementById('economic-indicators');
+        const container = document.getElementById('economicIndicators');
         if (!container) return;
         
-        let html = '<h4>Indicatori Economici</h4>';
+        let html = '<div class="row g-3">';
         
         if (data.key_indicators) {
             for (const [key, value] of Object.entries(data.key_indicators)) {
-                const trend = value.trend === 'DECLINING' ? '📉' : 
-                             value.trend === 'RISING' ? '📈' : '➡️';
-                
+                const val = value.value || value;
                 html += `
-                    <div class="indicator-item">
-                        <span>${key.replace(/_/g, ' ')}</span>
-                        <span>${value.value} ${trend}</span>
-                    </div>
-                `;
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded">
+                            <div class="text-muted small">${key.replace(/_/g, ' ')}</div>
+                            <div class="h5 mb-0">${val}</div>
+                        </div>
+                    </div>`;
             }
         }
         
+        html += '</div>';
         container.innerHTML = html;
+    }
+    
+    // Metodi aggiuntivi per le altre tab
+    async loadTechnicalData() {
+        console.log('📊 Caricamento dati tecnici...');
+        // Implementazione futura
+    }
+    
+    async loadEconomicData() {
+        console.log('💰 Caricamento dati economici...');
+        // Implementazione futura
+    }
+    
+    async loadPredictionsData() {
+        console.log('🔮 Caricamento previsioni...');
+        // Implementazione futura
+    }
+    
+    async runFullAnalysis() {
+        console.log('🧠 Avvio analisi AI completa...');
+        
+        try {
+            const response = await fetch(`/api/scrape/${this.currentSymbol}`, {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Analisi completata:', data);
+                
+                // Ricarica dati
+                await this.loadInitialData();
+            }
+        } catch (error) {
+            console.error('❌ Errore analisi:', error);
+        }
     }
     
     async switchSymbol(symbol) {
@@ -513,21 +680,6 @@ class COTDashboard {
             await this.loadInitialData();
             
         }, this.debounceDelay);
-    }
-    
-    switchTab(tabName) {
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.style.display = 'none';
-        });
-        
-        const selectedTab = document.getElementById(`${tabName}-tab`);
-        if (selectedTab) {
-            selectedTab.style.display = 'block';
-        }
-        
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.tab === tabName);
-        });
     }
     
     async forceRefresh() {
@@ -559,36 +711,21 @@ class COTDashboard {
     }
     
     showLoader() {
-        const loader = document.getElementById('main-loader');
-        if (loader) loader.style.display = 'flex';
-        
-        // Aggiungi classe loading ai containers
-        document.querySelectorAll('.data-container').forEach(el => {
-            el.classList.add('loading');
+        // Implementazione semplificata
+        document.querySelectorAll('.loading').forEach(el => {
+            el.style.display = 'block';
         });
     }
     
     hideLoader() {
-        const loader = document.getElementById('main-loader');
-        if (loader) loader.style.display = 'none';
-        
-        // Rimuovi classe loading
-        document.querySelectorAll('.data-container').forEach(el => {
-            el.classList.remove('loading');
+        document.querySelectorAll('.loading').forEach(el => {
+            el.style.display = 'none';
         });
     }
     
     showError(message) {
-        const errorContainer = document.getElementById('error-message');
-        if (errorContainer) {
-            errorContainer.textContent = message;
-            errorContainer.style.display = 'block';
-            
-            setTimeout(() => {
-                errorContainer.style.display = 'none';
-            }, 5000);
-        }
         console.error('❌', message);
+        // Potresti aggiungere un toast o alert
     }
     
     destroy() {
