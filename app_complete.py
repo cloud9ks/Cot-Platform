@@ -2147,26 +2147,7 @@ def create_database_indexes():
         logger.error(f"Errore creazione indici: {e}")
         db.session.rollback()
   
-@app.route('/api/cache/stats')
-def cache_stats():
-    """Mostra statistiche cache"""
-    return jsonify(GLOBAL_CACHE.get_stats())
 
-@app.route('/api/cache/clear', methods=['POST'])
-@login_required
-def cache_clear():
-    """Pulisce cache - solo utenti loggati"""
-    if not current_user.is_admin:
-        return jsonify({'error': 'Solo admin'}), 403
-    
-    GLOBAL_CACHE.clear_all()
-    cache.clear()  # Pulisci anche la cache Flask
-    
-    return jsonify({
-        'status': 'success',
-        'message': 'Cache cleared'
-    })      
-        
 if __name__ == '__main__':
     import os
     
