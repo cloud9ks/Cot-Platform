@@ -1181,8 +1181,14 @@ async function runFullAnalysis(symbol) {
   console.log('🧠 Avvio analisi AI completa...');
   
   try {
-    // Corretto: usa GET invece di POST
-    const res = await fetch(`/api/scrape/${encodeURIComponent(symbol)}`);
+    // USA GET NON POST!
+    const res = await fetch(`/api/scrape/${encodeURIComponent(symbol)}`, {
+      method: 'GET',  // <-- IMPORTANTE: GET non POST
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
     if (!res.ok) throw new Error('scrape failed');
 
     const data = await res.json();
@@ -1192,6 +1198,9 @@ async function runFullAnalysis(symbol) {
       renderGptAnalysis(document.getElementById('gptAnalysis'), data.gpt_analysis);
     }
 
+    // Pulisci cache per forzare refresh
+    cache.clear();
+    
     // Ricarica tutto
     await reloadAll();
 
@@ -1208,19 +1217,17 @@ async function runFullAnalysis(symbol) {
 function setupAutoRefresh() {
   if (autoRefreshInterval) clearInterval(autoRefreshInterval);
   
-  // CAMBIA DA 60000 (1 minuto) A 300000 (5 minuti)
   autoRefreshInterval = setInterval(async () => {
+    console.log('🔄 Auto-refresh...');
     try {
-      // Pulisci cache prima del refresh per forzare nuovi dati
-      cache.clear();
       await loadOverview(currentSymbol);
       await loadPredictions(currentSymbol);
     } catch (e) {
       console.warn('Auto refresh error:', e);
     }
-  }, 300000); // 5 minuti invece di 1 minuto
+  }, 300000); // 5 minuti
   
-  console.log('⏰ Auto-refresh attivo ogni 5 minuti');
+  console.log('⏰ Auto-refresh attivo ogni 5 minuti'); // <-- CORRETTO
 }
 // =====================================================
 // UTILITIES
