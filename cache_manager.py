@@ -200,9 +200,16 @@ def _generate_cache_key(args: tuple, kwargs: dict) -> str:
     """Genera una chiave univoca per gli argomenti"""
     # Crea una stringa rappresentativa degli argomenti
     key_parts = []
-    
-    # Aggiungi args (salta self/cls se presente)
-    start_idx = 1 if args and hasattr(args[0], '__class__') else 0
+
+    # Aggiungi args (salta self/cls solo se è un'istanza di classe custom, non stringhe/int/etc)
+    start_idx = 0
+    if args:
+        first_arg = args[0]
+        # Salta solo se è un'istanza di una classe custom (non built-in types)
+        if (hasattr(first_arg, '__class__') and
+            not isinstance(first_arg, (str, int, float, bool, list, dict, tuple, set))):
+            start_idx = 1
+
     for arg in args[start_idx:]:
         if isinstance(arg, (str, int, float, bool)):
             key_parts.append(str(arg))
