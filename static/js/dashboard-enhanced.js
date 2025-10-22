@@ -17,7 +17,7 @@ let updateInterval = null;
 
 // Cache management
 const cache = new Map();
-const cacheTimeout = 300000;
+const cacheTimeout = 30000; // 30 secondi invece di 5 minuti
 const pendingRequests = new Map();
 
 // Configurazione piano utente
@@ -155,12 +155,22 @@ async function loadSymbols() {
       }
 
       btn.addEventListener('click', async () => {
+        // Evita doppio click sullo stesso simbolo
+        if (currentSymbol === symbol.code) {
+          console.log('⚠️ Simbolo già selezionato:', symbol.code);
+          return;
+        }
+
         document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+
+        const oldSymbol = currentSymbol;
         currentSymbol = symbol.code;
-        console.log('Simbolo selezionato:', currentSymbol);
-        cache.clear();
-        await reloadAll();
+
+        console.log(`🔄 Cambio simbolo: ${oldSymbol} → ${currentSymbol}`);
+
+        // Forza il reload completo con bypass cache
+        await reloadAll(true);
       });
 
       container.appendChild(btn);
@@ -207,10 +217,16 @@ function setupEventListeners() {
   const btnRefresh = document.getElementById('btnRefresh');
   if (btnRefresh) {
     btnRefresh.addEventListener('click', async () => {
+      console.log('🔄 Refresh manuale richiesto');
       btnRefresh.classList.add('btn-loading');
-      await reloadAll();
+      btnRefresh.disabled = true;
+
+      // Forza il reload completo bypassando la cache
+      await reloadAll(true);
+
       btnRefresh.classList.remove('btn-loading');
-      showAlert('Dati aggiornati', 'success');
+      btnRefresh.disabled = false;
+      showAlert('✅ Dati aggiornati con successo', 'success');
     });
   }
 
@@ -400,7 +416,13 @@ async function loadInitialData() {
   }
 }
 
-async function reloadAll() {
+async function reloadAll(forceRefresh = false) {
+  // Se forceRefresh è true, pulisci la cache prima di ricaricare
+  if (forceRefresh) {
+    cache.clear();
+    console.log('🗑️ Cache pulita prima del reload');
+  }
+
   await Promise.allSettled([
     loadOverview(currentSymbol),
     loadCotHistory(currentSymbol, getSelectedDays()),
@@ -411,6 +433,8 @@ async function reloadAll() {
     loadMarketOverview(),
     loadAlerts(currentSymbol)
   ]);
+
+  console.log('✅ Reload completato per simbolo:', currentSymbol);
 }
 
 function getSelectedDays() {
@@ -1182,6 +1206,7 @@ async function runFullAnalysis(symbol) {
   }
 
   console.log('🧠 Avvio analisi AI completa...');
+  showAlert('Analisi AI in corso...', 'info', 10000);
 
   try {
     const res = await fetch(`/api/scrape/${encodeURIComponent(symbol)}`, {
@@ -1195,20 +1220,32 @@ async function runFullAnalysis(symbol) {
 
     const data = await res.json();
 
-    // Aggiorna subito la box GPT
+    console.log('✅ Analisi AI completata, dati ricevuti:', data);
+
+    // Pulisci TUTTA la cache per forzare refresh
+    cache.clear();
+    console.log('🗑️ Cache JavaScript completamente pulita');
+
+    // Aspetta 1 secondo per assicurarsi che il backend abbia salvato tutto
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Ricarica tutto FORZANDO il bypass della cache
+    console.log('🔄 Ricaricamento forzato di tutti i dati...');
+    await reloadAll(true); // Force refresh = true
+
+    // Aggiorna subito la box GPT se disponibile
     if (data && data.gpt_analysis) {
       renderGptAnalysis(document.getElementById('gptAnalysis'), data.gpt_analysis);
     }
 
-    // Pulisci cache per forzare refresh
-    cache.clear();
+    // Aggiorna ML prediction se disponibile
+    if (data && data.ml_prediction) {
+      setAIPrediction(data.ml_prediction);
+    }
 
-    // Ricarica tutto
-    await reloadAll();
-
-    showAlert('Analisi AI completata', 'success');
+    showAlert('✅ Analisi AI completata e dati aggiornati!', 'success', 5000);
   } catch (e) {
-    console.error('Errore runFullAnalysis:', e);
+    console.error('❌ Errore runFullAnalysis:', e);
     showAlert('Errore durante l\'analisi AI', 'danger');
   }
 }
@@ -1235,14 +1272,22 @@ function setupAutoRefresh() {
 // =====================================================
 // UTILITIES
 // =====================================================
-async function fetchWithCache(url) {
+async function fetchWithCache(url, bypassCache = false) {
   const cacheKey = url;
   const cached = cache.get(cacheKey);
 
-  // Check cache
-  if (cached && (Date.now() - cached.timestamp < cacheTimeout)) {
+  // Se bypassCache è true, salta completamente la cache
+  if (!bypassCache && cached && (Date.now() - cached.timestamp < cacheTimeout)) {
     console.log(`✅ Cache hit: ${url}`);
     return cached.data;
+  }
+
+  // Aggiungi timestamp per forzare bypass cache HTTP del browser
+  const separator = url.includes('?') ? '&' : '?';
+  const fetchUrl = bypassCache ? `${url}${separator}_t=${Date.now()}` : url;
+
+  if (bypassCache) {
+    console.log(`🔄 Bypass cache per: ${url}`);
   }
 
   const controller = new AbortController();
@@ -1250,8 +1295,12 @@ async function fetchWithCache(url) {
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(url, {
-      signal: controller.signal
+    const response = await fetch(fetchUrl, {
+      signal: controller.signal,
+      headers: {
+        'Cache-Control': bypassCache ? 'no-cache, no-store, must-revalidate' : 'default',
+        'Pragma': bypassCache ? 'no-cache' : 'default'
+      }
     });
     clearTimeout(timeoutId);
 
@@ -1274,8 +1323,8 @@ async function fetchWithCache(url) {
       console.error(`❌ Errore fetch ${url}:`, error);
     }
 
-    // Ritorna dati cached anche se vecchi
-    if (cached) {
+    // Ritorna dati cached anche se vecchi (solo se non stiamo forzando bypass)
+    if (!bypassCache && cached) {
       console.log(`⚠️ Usando cache stale per ${url}`);
       return cached.data;
     }
