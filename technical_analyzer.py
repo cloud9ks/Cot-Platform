@@ -154,33 +154,35 @@ class TechnicalAnalyzer:
         self._ohlc_cache_store[(symbol, interval)] = (df.copy(), monotonic())
 
     def _is_price_sane(self, symbol: str, price: float) -> bool:
-        """PATCH: Filtra valori anomali. Range aggiornati Q4 2024."""
+        """PATCH: Filtra valori anomali. Range molto ampi per evitare falsi positivi."""
         try:
             p = float(price)
         except Exception:
             return False
-        
-        # PATCH: Range più stretti e realistici
+
+        # Range molto ampi - solo per filtrare errori API grossolani (es. 0.0 o 999999)
+        # Non per correggere movimenti di mercato reali
         bounds = {
-            "GOLD": (2400.0, 2800.0),    # CAMBIATO da (1000.0, 4000.0)
-            "SILVER": (28.0, 35.0),       # CAMBIATO da (5.0, 100.0)
-            "EUR": (1.0, 1.15),          
-            "GBP": (1.20, 1.35),         
-            "AUD": (0.62, 0.70),         
-            "JPY": (145.0, 155.0),       
-            "CHF": (0.85, 0.92),         
-            "CAD": (1.32, 1.40),         
-            "OIL": (65.0, 85.0),         
-            "SP500": (4000.0, 5000.0),   
-            "NASDAQ": (14000.0, 17000.0),
-            "USD": (100.0, 108.0),
+            "GOLD": (1800.0, 3500.0),      # Ampio range per movimenti oro
+            "SILVER": (15.0, 50.0),        # Range realistico silver
+            "EUR": (0.85, 1.35),           # Ampio range FX
+            "GBP": (1.10, 1.50),           # Ampio range sterling
+            "AUD": (0.55, 0.85),           # Range commodities
+            "JPY": (120.0, 170.0),         # Ampio range yen
+            "CHF": (0.75, 1.10),           # Range franco
+            "CAD": (1.20, 1.50),           # Range CAD
+            "OIL": (40.0, 150.0),          # Ampio per volatilità petrolio
+            "SP500": (3500.0, 6500.0),     # Ampio range equity
+            "NASDAQ": (12000.0, 20000.0),  # Ampio range tech
+            "USD": (90.0, 120.0),          # Ampio range DXY
         }
-        
-        lo, hi = bounds.get(symbol, (p * 0.8, p * 1.2))
-        
+
+        # Default: +/-100% per simboli sconosciuti (solo per errori grossolani)
+        lo, hi = bounds.get(symbol, (p * 0.2, p * 5.0))
+
         if not (lo <= p <= hi):
             logger.warning(f"⚠️ Prezzo anomalo per {symbol}: {p:.2f} (range: {lo:.2f}-{hi:.2f})")
-        
+
         return lo <= p <= hi
     
     def _fix_anomalous_price(self, symbol: str, price: float) -> float:
