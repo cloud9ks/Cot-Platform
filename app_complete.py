@@ -1032,11 +1032,18 @@ def get_current_economic_data():
         
         # Ottieni sentiment di mercato
         market_data = get_market_sentiment()
-        
+
+        # Determina risk regime dal sentiment
+        overall_sentiment = market_data.get('overall_sentiment', '')
+        risk_on = 'RISK_ON' in overall_sentiment.upper()
+        risk_off = 'RISK_OFF' in overall_sentiment.upper()
+
         # Combina con dati economici simulati
         economic_data = {
             'timestamp': datetime.now().isoformat(),
             'market_sentiment': market_data,
+            'risk_on': risk_on,
+            'risk_off': risk_off,
             'key_indicators': {
                 'inflation_usa': {
                     'value': 2.7,

@@ -1124,15 +1124,26 @@ async function loadMarketOverview() {
 
     if (!res) return;
 
-    const sentimentPct = res.market_sentiment || res.sentiment ||
-                        res.key_indicators?.market_sentiment?.value || 0;
-    const riskFlag = res.risk_on ? 'Risk-ON' : res.risk_off ? 'Risk-OFF' : '—';
+    // Market sentiment può essere un oggetto o un numero
+    let sentimentValue = '—';
+    if (res.market_sentiment) {
+      if (typeof res.market_sentiment === 'object') {
+        // È un oggetto, prendi overall_sentiment
+        sentimentValue = res.market_sentiment.overall_sentiment || '—';
+      } else {
+        sentimentValue = `${res.market_sentiment}%`;
+      }
+    }
+
+    const riskFlag = res.risk_on ? 'Risk-ON' :
+                     res.risk_off ? 'Risk-OFF' :
+                     res.market_sentiment?.overall_sentiment || '—';
 
     box.innerHTML = `
       <div class="row g-3">
         <div class="col-md-4">
           <div class="metric-card">
-            <div class="metric-value">${sentimentPct}%</div>
+            <div class="metric-value">${sentimentValue}</div>
             <div class="metric-label">Market Sentiment</div>
           </div>
         </div>
