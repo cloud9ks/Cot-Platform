@@ -1286,17 +1286,18 @@ def get_complete_analysis(symbol):
             } for p in recent_predictions
         ]
         
-        # FIX: Aggiungi GPT Analysis dall'ultima predizione salvata
-        last_pred = Prediction.query.filter_by(symbol=symbol)\
-            .order_by(Prediction.prediction_date.desc()).first()
-        
-        if last_pred and last_pred.gpt_analysis:
-            try:
-                gpt_json = json.loads(last_pred.gpt_analysis) \
-                           if isinstance(last_pred.gpt_analysis, str) else last_pred.gpt_analysis
-                complete_analysis['gpt_analysis'] = gpt_json
-            except Exception:
-                complete_analysis['gpt_analysis'] = last_pred.gpt_analysis
+        # Usa GPT Analysis dal database SOLO se non è stata generata una nuova
+        if 'gpt_analysis' not in complete_analysis or not complete_analysis.get('gpt_analysis'):
+            last_pred = Prediction.query.filter_by(symbol=symbol)\
+                .order_by(Prediction.prediction_date.desc()).first()
+
+            if last_pred and last_pred.gpt_analysis:
+                try:
+                    gpt_json = json.loads(last_pred.gpt_analysis) \
+                               if isinstance(last_pred.gpt_analysis, str) else last_pred.gpt_analysis
+                    complete_analysis['gpt_analysis'] = gpt_json
+                except Exception:
+                    complete_analysis['gpt_analysis'] = last_pred.gpt_analysis
         
         return jsonify(complete_analysis)
         

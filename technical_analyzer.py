@@ -160,25 +160,26 @@ class TechnicalAnalyzer:
         except Exception:
             return False
 
-        # Range molto ampi - solo per filtrare errori API grossolani (es. 0.0 o 999999)
-        # Non per correggere movimenti di mercato reali
+        # Range SOLO per filtrare errori API evidenti (0.0, numeri negativi, 999999)
+        # NON per correggere movimenti di mercato reali
+        # Questi range sono ESTREMAMENTE ampi per accettare qualsiasi prezzo valido
         bounds = {
-            "GOLD": (1800.0, 3500.0),      # Ampio range per movimenti oro
-            "SILVER": (15.0, 50.0),        # Range realistico silver
-            "EUR": (0.85, 1.35),           # Ampio range FX
-            "GBP": (1.10, 1.50),           # Ampio range sterling
-            "AUD": (0.55, 0.85),           # Range commodities
-            "JPY": (120.0, 170.0),         # Ampio range yen
-            "CHF": (0.75, 1.10),           # Range franco
-            "CAD": (1.20, 1.50),           # Range CAD
-            "OIL": (40.0, 150.0),          # Ampio per volatilità petrolio
-            "SP500": (3500.0, 6500.0),     # Ampio range equity
-            "NASDAQ": (12000.0, 20000.0),  # Ampio range tech
-            "USD": (90.0, 120.0),          # Ampio range DXY
+            "GOLD": (100.0, 10000.0),      # Oro può salire molto - no limiti stretti!
+            "SILVER": (1.0, 200.0),        # Silver range molto ampio
+            "EUR": (0.50, 2.0),            # FX range amplissimo
+            "GBP": (0.50, 2.0),            # Sterling range amplissimo
+            "AUD": (0.30, 1.50),           # Commodities FX ampio
+            "JPY": (50.0, 250.0),          # Yen range amplissimo
+            "CHF": (0.50, 2.0),            # Franco range amplissimo
+            "CAD": (0.50, 2.50),           # CAD range amplissimo
+            "OIL": (10.0, 300.0),          # Petrolio può essere molto volatile
+            "SP500": (1000.0, 10000.0),    # Equity range amplissimo
+            "NASDAQ": (5000.0, 30000.0),   # Tech range amplissimo
+            "USD": (50.0, 200.0),          # DXY range amplissimo
         }
 
-        # Default: +/-100% per simboli sconosciuti (solo per errori grossolani)
-        lo, hi = bounds.get(symbol, (p * 0.2, p * 5.0))
+        # Default: quasi nessun limite - solo per errori API evidenti
+        lo, hi = bounds.get(symbol, (0.01, p * 10.0))
 
         if not (lo <= p <= hi):
             logger.warning(f"⚠️ Prezzo anomalo per {symbol}: {p:.2f} (range: {lo:.2f}-{hi:.2f})")

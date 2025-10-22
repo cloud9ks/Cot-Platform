@@ -36,7 +36,10 @@ let userPlan = {
 // =====================================================
 // FORMATTERS
 // =====================================================
-const numberFmt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 4 });
+const numberFmt = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 0,
+  useGrouping: true
+});
 const currencyFmt = new Intl.NumberFormat('it-IT', {
   style: 'currency',
   currency: 'USD',
