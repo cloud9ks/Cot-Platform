@@ -1916,6 +1916,7 @@ def get_data(symbol):
         .order_by(COTData.date.desc()).all()
     
     return jsonify([{
+        'symbol': d.symbol,  # ✅ AGGIUNTO - mancava!
         'date': d.date.isoformat(),
         'non_commercial_long': d.non_commercial_long,
         'non_commercial_short': d.non_commercial_short,
@@ -1948,6 +1949,52 @@ def get_predictions(symbol):
         'ml_score': p.ml_score,
         'gpt_analysis': p.gpt_analysis
     } for p in predictions])
+
+# ==========================================
+# CACHE MANAGEMENT (solo admin)
+# ==========================================
+
+@app.route('/api/cache/clear', methods=['POST'])
+@login_required
+def clear_all_cache():
+    """Pulisce TUTTE le cache - solo admin"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Accesso negato - solo admin'}), 403
+
+    try:
+        # 1. Pulisci Flask cache
+        cache.clear()
+        logger.info("🗑️ Flask cache completamente pulita")
+
+        # 2. Pulisci GLOBAL_CACHE
+        GLOBAL_CACHE.clear_all()
+        logger.info("🗑️ GLOBAL_CACHE completamente pulita")
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Tutte le cache sono state pulite',
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"❌ Errore pulizia cache: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/cache/stats')
+@login_required
+def cache_stats():
+    """Statistiche cache - solo admin"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Accesso negato - solo admin'}), 403
+
+    try:
+        global_stats = GLOBAL_CACHE.get_stats()
+        return jsonify({
+            'global_cache': global_stats,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ==========================================
 # HEALTH CHECK (per Render)
 # ==========================================
