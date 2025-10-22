@@ -1052,30 +1052,19 @@ function renderEconomicCalendar(data) {
 // CARICAMENTO PREVISIONI
 // =====================================================
 async function loadPredictions(symbol) {
-  const table = document.getElementById('predictionsTable');
   const gptBox = document.getElementById('gptAnalysis');
 
   try {
-    const [predRes, completeRes] = await Promise.allSettled([
-      fetchWithCache(`/api/predictions/${encodeURIComponent(symbol)}`),
-      fetchWithCache(`/api/analysis/complete/${encodeURIComponent(symbol)}`)
-    ]);
+    // Carica solo analisi completa (no tabella previsioni)
+    const completeRes = await fetchWithCache(`/api/analysis/complete/${encodeURIComponent(symbol)}`);
 
-    // Tabella previsioni
-    if (predRes.status === 'fulfilled' && predRes.value) {
-      renderPredictionsTable(predRes.value);
-    } else if (table) {
-      table.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nessuna previsione disponibile</td></tr>';
-    }
+    if (completeRes) {
+      console.log('📥 Complete analysis response:', completeRes);
+      console.log('🔍 gpt_analysis:', completeRes.gpt_analysis);
+      console.log('🔍 ml_prediction.gpt_analysis:', completeRes.ml_prediction?.gpt_analysis);
 
-    // Analisi GPT
-    if (completeRes.status === 'fulfilled' && completeRes.value) {
-      console.log('📥 Complete analysis response:', completeRes.value);
-      console.log('🔍 gpt_analysis:', completeRes.value.gpt_analysis);
-      console.log('🔍 ml_prediction.gpt_analysis:', completeRes.value.ml_prediction?.gpt_analysis);
-
-      const gpt = completeRes.value.gpt_analysis ||
-                  completeRes.value.ml_prediction?.gpt_analysis;
+      const gpt = completeRes.gpt_analysis ||
+                  completeRes.ml_prediction?.gpt_analysis;
 
       if (gpt) {
         console.log('✅ Rendering GPT analysis:', gpt);
@@ -1091,32 +1080,6 @@ async function loadPredictions(symbol) {
   } catch (e) {
     console.error('Errore loadPredictions:', e);
   }
-}
-
-function renderPredictionsTable(preds) {
-  const tbody = document.getElementById('predictionsTable');
-  if (!tbody) return;
-
-  if (!Array.isArray(preds) || !preds.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nessuna previsione disponibile</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = preds.map(p => {
-    const d = p.prediction_date ? new Date(p.prediction_date) : null;
-    const direction = (p.predicted_direction || 'NEUTRAL').toUpperCase();
-    const sigCls = signalClass(direction);
-
-    return `<tr>
-      <td>${d ? dateFmt.format(d) : '—'}</td>
-      <td>${p.symbol || '—'}</td>
-      <td><span class="signal-box ${sigCls}">${direction}</span></td>
-      <td>${p.confidence ? Math.round(p.confidence) + '%' : '—'}</td>
-      <td>${p.ml_score != null ? (+p.ml_score).toFixed(2) : '—'}</td>
-      <td>${p.status || '—'}</td>
-      <td>${p.accuracy != null ? p.accuracy + '%' : '—'}</td>
-    </tr>`;
-  }).join('');
 }
 
 function renderGptAnalysis(container, gpt) {
