@@ -682,38 +682,7 @@ async function loadCotHistory(symbol, days = 30) {
       return;
     }
 
-    // Aggiorna tabella - ordina per data DECRESCENTE (più recente prima)
-    const tbody = document.getElementById('cotDataTable');
-    if (tbody) {
-      tbody.innerHTML = '';
-
-      // Ordina i dati per data decrescente (più recenti prima)
-      const sortedForTable = [...res].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      // Mostra solo gli ultimi 10 record nella tabella
-      sortedForTable.slice(0, 10).forEach(r => {
-        const d = new Date(r.date);
-
-        // Calcola variazione percentuale sentiment
-        const sentimentValue = (r.sentiment_score ?? 0).toFixed(2);
-        const sentimentClass = r.sentiment_score > 10 ? 'text-success fw-bold' :
-                              r.sentiment_score < -10 ? 'text-danger fw-bold' :
-                              'text-muted';
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="fw-bold">${dateFmt.format(d)}</td>
-          <td class="text-success">${numberFmt.format(r.non_commercial_long)}</td>
-          <td class="text-danger">${numberFmt.format(r.non_commercial_short)}</td>
-          <td class="text-primary">${numberFmt.format(r.commercial_long)}</td>
-          <td class="text-warning">${numberFmt.format(r.commercial_short)}</td>
-          <td class="fw-bold ${r.net_position >= 0 ? 'text-success' : 'text-danger'}">${numberFmt.format(r.net_position)}</td>
-          <td class="${sentimentClass}">${sentimentValue}%</td>`;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Aggiorna grafici
+    // Aggiorna solo i grafici (tabella rimossa)
     updateCOTCharts(res);
 
   } catch (e) {
