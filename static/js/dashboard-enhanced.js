@@ -449,20 +449,43 @@ function getSelectedDays() {
 // CARICAMENTO OVERVIEW
 // =====================================================
 async function loadOverview(symbol) {
+  console.log('📊 loadOverview per simbolo:', symbol);
+
   try {
     // Carica analisi completa
-    const completeRes = await fetchWithCache(`/api/analysis/complete/${encodeURIComponent(symbol)}`);
+    const url = `/api/analysis/complete/${encodeURIComponent(symbol)}`;
+    console.log('  Fetching:', url);
+    const completeRes = await fetchWithCache(url);
+
+    console.log('  Risposta completeRes:', completeRes);
+    console.log('  Simbolo nella risposta:', completeRes?.symbol);
+
+    if (completeRes?.symbol !== symbol) {
+      console.error(`❌ SIMBOLO SBAGLIATO! Richiesto: ${symbol}, Ricevuto: ${completeRes?.symbol}`);
+    } else {
+      console.log(`✅ Simbolo corretto: ${symbol}`);
+    }
 
     if (completeRes && !completeRes.error) {
       updateDashboard(completeRes);
     }
 
     // Carica dati COT separatamente se necessario
-    const cotRes = await fetchWithCache(`/api/data/${encodeURIComponent(symbol)}?days=90`);
+    const cotUrl = `/api/data/${encodeURIComponent(symbol)}?days=90`;
+    console.log('  Fetching COT:', cotUrl);
+    const cotRes = await fetchWithCache(cotUrl);
+
+    console.log('  Risposta cotRes:', cotRes);
 
     if (cotRes && cotRes.length > 0) {
       const latest = cotRes[0];
       const prev = cotRes[1] || null;
+
+      console.log('  Latest COT symbol:', latest?.symbol);
+
+      if (latest?.symbol !== symbol) {
+        console.error(`❌ COT SIMBOLO SBAGLIATO! Richiesto: ${symbol}, Ricevuto: ${latest?.symbol}`);
+      }
 
       // Aggiorna elementi overview
       updateOverviewElements(latest, prev);
@@ -472,7 +495,7 @@ async function loadOverview(symbol) {
     }
 
   } catch (e) {
-    console.error('Errore loadOverview:', e);
+    console.error('❌ Errore loadOverview:', e);
     updateOverviewElements(null, null);
   }
 }
@@ -1062,20 +1085,34 @@ function renderPredictionsTable(preds) {
 }
 
 function renderGptAnalysis(container, gpt) {
-  if (!container) return;
+  console.log('🎨 renderGptAnalysis called');
+  console.log('  container:', container);
+  console.log('  gpt:', gpt);
+
+  if (!container) {
+    console.error('❌ Container non trovato!');
+    return;
+  }
 
   if (!gpt) {
+    console.warn('⚠️ GPT non disponibile');
     container.innerHTML = '<div class="loading"><p class="mb-0">Nessuna analisi disponibile. Premi "Analisi AI" per generarne una.</p></div>';
     return;
   }
 
   let obj = typeof gpt === 'string' ? { text: gpt } : gpt;
+  console.log('  obj:', obj);
 
   const dir = (obj.direction || 'NEUTRAL').toUpperCase();
   const conf = obj.confidence ? Math.round(obj.confidence) : null;
-  const reason = obj.reasoning || obj.summary || obj.text || null;
+  const reason = obj.reasoning || obj.summary || obj.text || obj.market_outlook || null;
 
-  container.innerHTML = `
+  console.log('  dir:', dir);
+  console.log('  conf:', conf);
+  console.log('  reason:', reason);
+
+  try {
+    const html = `
     <div class="gpt-card">
       <div class="row g-3">
         <div class="col-12 col-lg-3">
@@ -1098,6 +1135,13 @@ function renderGptAnalysis(container, gpt) {
         </div>
       </div>
     </div>`;
+
+    console.log('  HTML generato, lunghezza:', html.length);
+    container.innerHTML = html;
+    console.log('✅ GPT renderizzata con successo!');
+  } catch (e) {
+    console.error('❌ Errore durante rendering GPT:', e);
+  }
 }
 
 // =====================================================
