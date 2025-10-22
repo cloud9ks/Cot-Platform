@@ -20,8 +20,8 @@ class Config:
     # === OPENAI API ===
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
     OPENAI_MODEL = "gpt-4o-mini"  # o "gpt-4" per risultati migliori
-    OPENAI_MAX_TOKENS = 1500
-    OPENAI_TEMPERATURE = 0.2
+    OPENAI_MAX_TOKENS = 3000  # AUMENTATO per analisi dettagliate
+    OPENAI_TEMPERATURE = 0.3  # Leggermente più creativo per analisi professionali
     
     # === SCHEDULER CONFIGURATION ===
     SCHEDULER_API_ENABLED = True

@@ -280,44 +280,37 @@ function initCharts() {
 
   if (cotCtx) {
     cotChart = new Chart(cotCtx, {
-      type: 'line',
+      type: 'bar',
       data: {
         labels: [],
         datasets: [
           {
             label: 'NC Long',
             data: [],
+            backgroundColor: 'rgba(16,185,129,0.8)',
             borderColor: '#10b981',
-            backgroundColor: 'rgba(16,185,129,0.1)',
-            tension: 0.25
+            borderWidth: 1
           },
           {
             label: 'NC Short',
             data: [],
+            backgroundColor: 'rgba(239,68,68,0.8)',
             borderColor: '#ef4444',
-            backgroundColor: 'rgba(239,68,68,0.1)',
-            tension: 0.25
+            borderWidth: 1
           },
           {
             label: 'Commercial Long',
             data: [],
+            backgroundColor: 'rgba(59,130,246,0.8)',
             borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59,130,246,0.1)',
-            tension: 0.25
+            borderWidth: 1
           },
           {
             label: 'Commercial Short',
             data: [],
+            backgroundColor: 'rgba(245,158,11,0.8)',
             borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245,158,11,0.1)',
-            tension: 0.25
-          },
-          {
-            label: 'Net Position',
-            data: [],
-            borderColor: '#8b5cf6',
-            borderWidth: 3,
-            tension: 0.25
+            borderWidth: 1
           }
         ]
       },
@@ -325,12 +318,44 @@ function initCharts() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top' },
-          tooltip: { mode: 'index', intersect: false }
+          legend: {
+            position: 'top',
+            labels: {
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                label += numberFmt.format(context.parsed.y);
+                return label;
+              }
+            }
+          }
         },
         scales: {
+          x: {
+            stacked: false,
+            grid: {
+              display: false
+            }
+          },
           y: {
-            ticks: { callback: (v) => numberFmt.format(v) }
+            stacked: false,
+            beginAtZero: false,
+            ticks: {
+              callback: (v) => numberFmt.format(v),
+              font: { size: 11 }
+            },
+            grid: {
+              color: 'rgba(0,0,0,0.05)'
+            }
           }
         }
       }
@@ -406,7 +431,7 @@ async function loadInitialData() {
   try {
     await Promise.allSettled([
       loadOverview(currentSymbol),
-      loadCotHistory(currentSymbol, 30),
+      loadCotHistory(currentSymbol, 90), // Default 90 giorni per coerenza con UI
       loadTechnical(currentSymbol),
       loadEconomic(),
       loadPredictions(currentSymbol),
@@ -442,7 +467,7 @@ async function reloadAll(forceRefresh = false) {
 
 function getSelectedDays() {
   const active = document.querySelector('[data-period].active');
-  return active ? parseInt(active.dataset.period, 10) : 30;
+  return active ? parseInt(active.dataset.period, 10) : 90; // Default 90 giorni
 }
 
 // =====================================================
@@ -657,21 +682,33 @@ async function loadCotHistory(symbol, days = 30) {
       return;
     }
 
-    // Aggiorna tabella
+    // Aggiorna tabella - ordina per data DECRESCENTE (più recente prima)
     const tbody = document.getElementById('cotDataTable');
     if (tbody) {
       tbody.innerHTML = '';
-      res.forEach(r => {
+
+      // Ordina i dati per data decrescente (più recenti prima)
+      const sortedForTable = [...res].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // Mostra solo gli ultimi 10 record nella tabella
+      sortedForTable.slice(0, 10).forEach(r => {
         const d = new Date(r.date);
+
+        // Calcola variazione percentuale sentiment
+        const sentimentValue = (r.sentiment_score ?? 0).toFixed(2);
+        const sentimentClass = r.sentiment_score > 10 ? 'text-success fw-bold' :
+                              r.sentiment_score < -10 ? 'text-danger fw-bold' :
+                              'text-muted';
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${dateFmt.format(d)}</td>
-          <td>${numberFmt.format(r.non_commercial_long)}</td>
-          <td>${numberFmt.format(r.non_commercial_short)}</td>
-          <td>${numberFmt.format(r.commercial_long)}</td>
-          <td>${numberFmt.format(r.commercial_short)}</td>
-          <td>${numberFmt.format(r.net_position)}</td>
-          <td>${(r.sentiment_score ?? 0).toFixed(2)}%</td>`;
+          <td class="fw-bold">${dateFmt.format(d)}</td>
+          <td class="text-success">${numberFmt.format(r.non_commercial_long)}</td>
+          <td class="text-danger">${numberFmt.format(r.non_commercial_short)}</td>
+          <td class="text-primary">${numberFmt.format(r.commercial_long)}</td>
+          <td class="text-warning">${numberFmt.format(r.commercial_short)}</td>
+          <td class="fw-bold ${r.net_position >= 0 ? 'text-success' : 'text-danger'}">${numberFmt.format(r.net_position)}</td>
+          <td class="${sentimentClass}">${sentimentValue}%</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -687,9 +724,9 @@ async function loadCotHistory(symbol, days = 30) {
 function updateCOTCharts(data) {
   if (!data || !data.length) return;
 
-  const labels = [], ncLong = [], ncShort = [], cLong = [], cShort = [], net = [];
+  const labels = [], ncLong = [], ncShort = [], cLong = [], cShort = [];
 
-  // Ordina per data
+  // Ordina per data crescente per il grafico
   const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   sorted.forEach(r => {
@@ -699,7 +736,6 @@ function updateCOTCharts(data) {
     ncShort.push(r.non_commercial_short);
     cLong.push(r.commercial_long);
     cShort.push(r.commercial_short);
-    net.push(r.net_position);
   });
 
   if (cotChart) {
@@ -708,8 +744,7 @@ function updateCOTCharts(data) {
     cotChart.data.datasets[1].data = ncShort;
     cotChart.data.datasets[2].data = cLong;
     cotChart.data.datasets[3].data = cShort;
-    cotChart.data.datasets[4].data = net;
-    cotChart.update();
+    cotChart.update('none'); // Update senza animazione per performance migliori
   }
 
   if (pieChart && sorted.length > 0) {
@@ -720,7 +755,7 @@ function updateCOTCharts(data) {
       last.commercial_long,
       last.commercial_short
     ];
-    pieChart.update();
+    pieChart.update('none');
   }
 
   console.log('✅ Grafici COT aggiornati');
@@ -1096,42 +1131,158 @@ function renderGptAnalysis(container, gpt) {
 
   if (!gpt) {
     console.warn('⚠️ GPT non disponibile');
-    container.innerHTML = '<div class="loading"><p class="mb-0">Nessuna analisi disponibile. Premi "Analisi AI" per generarne una.</p></div>';
+    container.innerHTML = '<div class="text-center py-5"><div class="text-muted"><i class="fas fa-robot fa-3x mb-3 opacity-25"></i><p class="mb-0">Nessuna analisi disponibile.<br>Premi "Analisi AI" per generarne una.</p></div></div>';
     return;
   }
 
   let obj = typeof gpt === 'string' ? { text: gpt } : gpt;
   console.log('  obj:', obj);
 
-  const dir = (obj.direction || 'NEUTRAL').toUpperCase();
+  const dir = (obj.direction || obj.trading_bias || 'NEUTRAL').toUpperCase();
   const conf = obj.confidence ? Math.round(obj.confidence) : null;
   const reason = obj.reasoning || obj.summary || obj.text || obj.market_outlook || null;
+
+  // Estrai dettagli aggiuntivi se presenti
+  const marketOutlook = obj.market_outlook || null;
+  const keyFactors = obj.key_factors || obj.factors || null;
+  const risks = obj.risks || obj.risk_factors || null;
+  const actionableInsights = obj.actionable_insights || obj.action_items || null;
+  const scenarios = obj.scenarios || null;
+  const positioning = obj.positioning_analysis || null;
+  const quantMetrics = obj.quantitative_metrics || null;
 
   console.log('  dir:', dir);
   console.log('  conf:', conf);
   console.log('  reason:', reason);
 
   try {
+    // Segnale visivo migliorato
+    let signalColor, signalIcon, signalBg;
+    if (dir.includes('BULLISH') || dir.includes('BUY')) {
+      signalColor = 'success';
+      signalIcon = 'fa-arrow-trend-up';
+      signalBg = 'rgba(16,185,129,0.1)';
+    } else if (dir.includes('BEARISH') || dir.includes('SELL')) {
+      signalColor = 'danger';
+      signalIcon = 'fa-arrow-trend-down';
+      signalBg = 'rgba(239,68,68,0.1)';
+    } else {
+      signalColor = 'secondary';
+      signalIcon = 'fa-arrows-left-right';
+      signalBg = 'rgba(107,114,128,0.1)';
+    }
+
+    // Barra di confidenza
+    const confBar = conf ? `
+      <div class="progress mt-2" style="height: 8px;">
+        <div class="progress-bar bg-${signalColor}" role="progressbar" style="width: ${conf}%" aria-valuenow="${conf}" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>` : '';
+
+    // Layout migliorato
     const html = `
-    <div class="gpt-card">
-      <div class="row g-3">
-        <div class="col-12 col-lg-3">
-          <div class="gpt-panel h-100 text-center">
-            <div class="gpt-label mb-1">Direzione</div>
-            <div class="mb-2"><span class="signal-box ${signalClass(dir)}">${dir}</span></div>
+    <div class="card border-0 shadow-sm" style="background: ${signalBg};">
+      <div class="card-body p-4">
+        <div class="row g-4">
+          <!-- Segnale Principale -->
+          <div class="col-12 col-md-4">
+            <div class="text-center p-3 bg-white rounded-3 shadow-sm h-100">
+              <i class="fas ${signalIcon} fa-3x text-${signalColor} mb-3"></i>
+              <h5 class="text-uppercase fw-bold text-${signalColor} mb-2">${dir}</h5>
+              <small class="text-muted d-block mb-2">Segnale AI</small>
+              ${conf ? `<div class="h3 fw-bold mb-0">${conf}%</div><small class="text-muted">Confidenza</small>${confBar}` : '<div class="text-muted">—</div>'}
+            </div>
+          </div>
+
+          <!-- Analisi Dettagliata -->
+          <div class="col-12 col-md-8">
+            <div class="bg-white rounded-3 shadow-sm p-4 h-100">
+              <h6 class="fw-bold mb-3 d-flex align-items-center">
+                <i class="fas fa-chart-line me-2 text-primary"></i>
+                Analisi di Mercato
+              </h6>
+
+              ${reason ? `
+                <div class="mb-3">
+                  <div class="small text-muted mb-1 fw-bold"><i class="fas fa-file-lines me-1"></i>Sintesi</div>
+                  <p class="mb-0 lh-lg">${escapeHtml(reason)}</p>
+                </div>
+              ` : ''}
+
+              ${marketOutlook && marketOutlook !== reason ? `
+                <div class="mb-3">
+                  <div class="small text-muted mb-1 fw-bold"><i class="fas fa-chart-line me-1"></i>Market Outlook</div>
+                  <p class="mb-0 lh-base">${escapeHtml(marketOutlook)}</p>
+                </div>
+              ` : ''}
+
+              ${keyFactors ? `
+                <div class="mb-3">
+                  <div class="small text-muted mb-1 fw-bold"><i class="fas fa-lightbulb me-1"></i>Fattori Chiave</div>
+                  <p class="mb-0 lh-base">${escapeHtml(typeof keyFactors === 'string' ? keyFactors : JSON.stringify(keyFactors))}</p>
+                </div>
+              ` : ''}
+
+              ${positioning ? `
+                <div class="mb-3 p-2 bg-light rounded">
+                  <div class="small text-muted mb-2 fw-bold"><i class="fas fa-users me-1"></i>Analisi Posizionamento</div>
+                  ${positioning.non_commercial ? `<div class="small mb-1"><strong>Non-Commercial:</strong> ${escapeHtml(positioning.non_commercial)}</div>` : ''}
+                  ${positioning.commercial ? `<div class="small mb-1"><strong>Commercial:</strong> ${escapeHtml(positioning.commercial)}</div>` : ''}
+                  ${positioning.divergence ? `<div class="small"><strong>Divergenza:</strong> ${escapeHtml(positioning.divergence)}</div>` : ''}
+                </div>
+              ` : ''}
+
+              ${quantMetrics ? `
+                <div class="mb-3">
+                  <div class="small text-muted mb-2 fw-bold"><i class="fas fa-chart-bar me-1"></i>Metriche Quantitative</div>
+                  <div class="row g-2">
+                    ${quantMetrics.net_position_percentile ? `<div class="col-6 col-md-4"><div class="small p-2 border rounded"><strong>Percentile:</strong><br>${escapeHtml(quantMetrics.net_position_percentile)}</div></div>` : ''}
+                    ${quantMetrics.sentiment_strength ? `<div class="col-6 col-md-4"><div class="small p-2 border rounded"><strong>Sentiment:</strong><br>${escapeHtml(quantMetrics.sentiment_strength)}</div></div>` : ''}
+                    ${quantMetrics.positioning_extreme ? `<div class="col-12 col-md-4"><div class="small p-2 border rounded"><strong>Posizionamento:</strong><br>${escapeHtml(quantMetrics.positioning_extreme)}</div></div>` : ''}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${scenarios ? `
+                <div class="mb-3 p-2 border border-primary rounded">
+                  <div class="small text-primary mb-2 fw-bold"><i class="fas fa-road me-1"></i>Scenari</div>
+                  ${scenarios.bullish_case ? `<div class="small mb-2"><span class="badge bg-success me-1">BULLISH</span> ${escapeHtml(scenarios.bullish_case)}</div>` : ''}
+                  ${scenarios.bearish_case ? `<div class="small mb-2"><span class="badge bg-danger me-1">BEARISH</span> ${escapeHtml(scenarios.bearish_case)}</div>` : ''}
+                  ${scenarios.most_likely ? `<div class="small fw-bold text-primary"><i class="fas fa-star me-1"></i>Più probabile: ${escapeHtml(scenarios.most_likely)}</div>` : ''}
+                </div>
+              ` : ''}
+
+              ${actionableInsights && Array.isArray(actionableInsights) ? `
+                <div class="mb-3">
+                  <div class="small text-muted mb-2 fw-bold"><i class="fas fa-bolt me-1 text-warning"></i>Azioni Consigliate</div>
+                  <ul class="small mb-0 ps-3">
+                    ${actionableInsights.map(insight => `<li class="mb-1">${escapeHtml(insight)}</li>`).join('')}
+                  </ul>
+                </div>
+              ` : ''}
+
+              ${risks ? `
+                <div class="mb-0">
+                  <div class="small text-muted mb-1 fw-bold"><i class="fas fa-exclamation-triangle me-1 text-warning"></i>Rischi</div>
+                  <p class="mb-0 small text-warning lh-base">${escapeHtml(typeof risks === 'string' ? risks : JSON.stringify(risks))}</p>
+                </div>
+              ` : ''}
+
+              ${!reason && !marketOutlook && !keyFactors ? `
+                <div class="text-center text-muted py-3">
+                  <i class="fas fa-info-circle fa-2x mb-2 opacity-25"></i>
+                  <p class="mb-0">Analisi in fase di elaborazione...<br>I dettagli appariranno qui quando disponibili.</p>
+                </div>
+              ` : ''}
+            </div>
           </div>
         </div>
-        <div class="col-6 col-lg-3">
-          <div class="gpt-panel h-100 text-center">
-            <div class="gpt-label mb-1">Confidenza</div>
-            <div class="h4 mb-0">${conf ? conf + '%' : '—'}</div>
-          </div>
-        </div>
-        <div class="col-12">
-          <div class="gpt-panel">
-            <div class="gpt-label">Analisi</div>
-            ${reason ? `<p class="mb-0">${escapeHtml(reason)}</p>` : '<div class="text-muted">—</div>'}
-          </div>
+
+        <!-- Footer con timestamp -->
+        <div class="text-center mt-3">
+          <small class="text-muted">
+            <i class="fas fa-clock me-1"></i>
+            Analisi generata il ${dateFmt.format(new Date())}
+          </small>
         </div>
       </div>
     </div>`;
@@ -1141,6 +1292,7 @@ function renderGptAnalysis(container, gpt) {
     console.log('✅ GPT renderizzata con successo!');
   } catch (e) {
     console.error('❌ Errore durante rendering GPT:', e);
+    container.innerHTML = '<div class="alert alert-danger">Errore nel rendering dell\'analisi</div>';
   }
 }
 

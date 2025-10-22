@@ -15,8 +15,8 @@ except ImportError:
     class config:
         OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
         OPENAI_MODEL = "gpt-4o-mini"
-        OPENAI_MAX_TOKENS = 1500
-        OPENAI_TEMPERATURE = 0.2
+        OPENAI_MAX_TOKENS = 3000  # Aggiornato per analisi dettagliate
+        OPENAI_TEMPERATURE = 0.3  # Aggiornato per analisi più creative
         SENTIMENT_THRESHOLD_BULLISH = 20
         SENTIMENT_THRESHOLD_BEARISH = -20
         ANALYSIS_OUTPUT_FOLDER = 'data/analysis_output'
@@ -88,22 +88,24 @@ class GPTAnalyzer:
             # Prepara il prompt
             prompt = self._create_single_analysis_prompt(cot_data)
             
-            # Chiama GPT con nuova API
+            # Chiama GPT con nuova API - MAX_TOKENS AUMENTATO per analisi dettagliate
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {
                         "role": "system",
-                        "content": """Sei un esperto analista finanziario specializzato nell'analisi COT (Commitment of Traders). 
-                        Fornisci analisi professionali, precise e actionable. Rispondi sempre in formato JSON valido."""
+                        "content": """Sei un esperto analista finanziario senior specializzato nell'analisi COT (Commitment of Traders) e posizionamento istituzionale.
+                        Fornisci analisi professionali, precise, dettagliate e actionable per clienti professionali.
+                        Usa numeri specifici, percentuali, e confronti quantitativi. Evita genericità.
+                        Rispondi sempre in formato JSON valido."""
                     },
                     {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
+                temperature=0.3,  # Leggermente più creativo per analisi dettagliate
+                max_tokens=3000,  # AUMENTATO da 1500 a 3000 per supportare analisi complete
                 response_format={"type": "json_object"}
             )
             
@@ -196,62 +198,113 @@ class GPTAnalyzer:
             }
     
     def _create_single_analysis_prompt(self, cot_data: Dict) -> str:
-        """Crea il prompt per l'analisi di un singolo simbolo"""
-        
+        """Crea il prompt per l'analisi di un singolo simbolo - VERSIONE DETTAGLIATA"""
+
         symbol = cot_data.get('symbol', 'ASSET')
         name = cot_data.get('name', symbol)
-        
+
+        # Calcola metriche addizionali
+        nc_long = cot_data.get('non_commercial_long', 0)
+        nc_short = cot_data.get('non_commercial_short', 0)
+        c_long = cot_data.get('commercial_long', 0)
+        c_short = cot_data.get('commercial_short', 0)
+        net_position = cot_data.get('net_position', 0)
+        sentiment_score = cot_data.get('sentiment_score', 0)
+
+        # Calcola % di variazione se disponibile
+        prev_net = cot_data.get('prev_net_position', net_position)
+        net_change = ((net_position - prev_net) / abs(prev_net) * 100) if prev_net != 0 else 0
+
+        # Total open interest
+        total_oi = nc_long + nc_short + c_long + c_short
+        nc_percentage = ((nc_long + nc_short) / total_oi * 100) if total_oi > 0 else 0
+
         prompt = f"""
-        Analizza i seguenti dati COT per {name} ({symbol}):
-        
-        POSIZIONI ATTUALI:
-        - Non-Commercial Long: {cot_data.get('non_commercial_long', 0):,}
-        - Non-Commercial Short: {cot_data.get('non_commercial_short', 0):,}
-        - Commercial Long: {cot_data.get('commercial_long', 0):,}
-        - Commercial Short: {cot_data.get('commercial_short', 0):,}
-        
-        METRICHE CALCOLATE:
-        - Net Position (NC): {cot_data.get('net_position', 0):,}
-        - Sentiment Score: {cot_data.get('sentiment_score', 0):.2f}%
-        - Sentiment Direction: {cot_data.get('sentiment_direction', 'NEUTRAL')}
-        
-        RATIOS:
-        - NC Long/Short Ratio: {cot_data.get('nc_long_ratio', 0):.2f}
-        - Commercial Long/Short Ratio: {cot_data.get('c_long_ratio', 0):.2f}
-        
-        Fornisci un'analisi dettagliata in formato JSON con questa struttura:
-        {{
-            "market_outlook": "Descrizione della prospettiva di mercato",
-            "direction": "BULLISH/BEARISH/NEUTRAL",
-            "confidence": numero da 0 a 100,
-            "timeframe": "SHORT/MEDIUM/LONG",
-            "key_observations": [
-                "Osservazione 1",
-                "Osservazione 2",
-                "Osservazione 3"
-            ],
-            "sentiment_analysis": {{
-                "non_commercial": "Analisi del sentiment dei trader non commerciali",
-                "commercial": "Analisi del sentiment dei trader commerciali",
-                "divergence": "Eventuali divergenze tra i due gruppi"
-            }},
-            "technical_levels": {{
-                "support": "Livello di supporto chiave",
-                "resistance": "Livello di resistenza chiave",
-                "target": "Target di prezzo potenziale"
-            }},
-            "risk_factors": [
-                "Rischio 1",
-                "Rischio 2"
-            ],
-            "trading_bias": "LONG/SHORT/NEUTRAL",
-            "action_items": [
-                "Azione consigliata 1",
-                "Azione consigliata 2"
-            ]
-        }}
+Sei un analista finanziario esperto specializzato in COT (Commitment of Traders) e analisi dei flussi istituzionali.
+
+Analizza in dettaglio i dati COT per **{name} ({symbol})** e fornisci un'analisi OPERATIVA e PROFESSIONALE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 DATI COT ATTUALI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Non-Commercial (Speculatori/Hedge Funds):**
+• Long Positions: {nc_long:,} contratti
+• Short Positions: {nc_short:,} contratti
+• Net Position: {net_position:,} contratti ({net_change:+.1f}% vs periodo precedente)
+• Long/Short Ratio: {(nc_long/nc_short if nc_short > 0 else 0):.2f}
+
+**Commercial (Hedger/Produttori):**
+• Long Positions: {c_long:,} contratti
+• Short Positions: {c_short:,} contratti
+• Net Position: {(c_long - c_short):,} contratti
+• Long/Short Ratio: {(c_long/c_short if c_short > 0 else 0):.2f}
+
+**Metriche Aggregate:**
+• Sentiment Score: {sentiment_score:.2f}% (range: -100 a +100)
+• Total Open Interest: {total_oi:,} contratti
+• Non-Commercial % del mercato: {nc_percentage:.1f}%
+• Divergenza NC vs Commercial: {abs((nc_long - nc_short) + (c_short - c_long)):,} contratti
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 RICHIESTA ANALISI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Fornisci un'analisi DETTAGLIATA e OPERATIVA seguendo questa struttura JSON:
+
+{{
+    "direction": "BULLISH/BEARISH/NEUTRAL",
+    "confidence": <numero 0-100>,
+    "reasoning": "Sintesi dell'analisi in 2-3 frasi chiare che spiegano perché il sentiment è bullish/bearish/neutral. Menziona i dati chiave: posizioni nette, divergenze NC vs Commercial, variazioni recenti.",
+
+    "market_outlook": "Outlook di mercato dettagliato: cosa stanno facendo i grandi player (NC), come si stanno posizionando i commerciali, quali sono le implicazioni per il prezzo nel breve-medio termine.",
+
+    "key_factors": "Lista dei 3-4 fattori più importanti che guidano questa analisi. Es: 'NC long in aumento del 15%', 'Commercial hedge in riduzione', 'Sentiment score sopra +30 indica forte bias rialzista'",
+
+    "positioning_analysis": {{
+        "non_commercial": "Analisi dettagliata: cosa stanno facendo gli speculatori? Sono netti long o short? Di quanto? Questo è bullish o bearish? Stanno accumulando o distribuendo?",
+        "commercial": "Analisi hedger: i produttori si stanno coprendo long o short? Questo conferma o contrasta il sentiment NC? Quale gruppo ha storicamente più ragione?",
+        "divergence": "C'è divergenza tra NC e Commercial? Se sì, chi tende ad avere ragione storicamente? Questa divergenza è un segnale importante?"
+    }},
+
+    "quantitative_metrics": {{
+        "net_position_percentile": "Stima il percentile della net position attuale (es: 'Top 20%' = molto bullish, 'Bottom 20%' = molto bearish)",
+        "sentiment_strength": "Forte/Moderato/Debole in base al sentiment score",
+        "positioning_extreme": "Le posizioni sono estreme? Es: 'NC long ai massimi storici' o 'Posizionamento equilibrato'"
+    }},
+
+    "scenarios": {{
+        "bullish_case": "Scenario rialzista: cosa deve accadere per un movimento al rialzo? Quali livelli? Target realistici?",
+        "bearish_case": "Scenario ribassista: cosa invaliderebbe la view attuale? Quali rischi al ribasso?",
+        "most_likely": "BULLISH/BEARISH/NEUTRAL - quale scenario è più probabile dato il COT?"
+    }},
+
+    "risks": "Lista 2-3 rischi principali: posizionamento troppo affollato? Divergenze? Eventi macro? Inversioni storiche?",
+
+    "actionable_insights": [
+        "Insight 1: cosa fare operativamente",
+        "Insight 2: livelli da monitorare",
+        "Insight 3: segnali di conferma o invalidazione"
+    ],
+
+    "timeframe": "SHORT_TERM/MEDIUM_TERM/LONG_TERM - orizzonte temporale dell'analisi",
+
+    "technical_bias": "STRONGLY_BULLISH/BULLISH/NEUTRAL/BEARISH/STRONGLY_BEARISH"
+}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ IMPORTANTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Sii SPECIFICO: usa i numeri effettivi, non genericità
+2. Sii OPERATIVO: fornisci insight utilizzabili, non ovvietà
+3. Sii CHIARO: evita gergo eccessivo, spiega in termini semplici
+4. Considera il CONTESTO: sentiment score, net position, divergenze
+5. Fornisci VALORE: l'analisi deve essere vendibile a un cliente professionale
+
+RISPONDI SOLO CON IL JSON, NIENT'ALTRO.
         """
-        
+
         return prompt
     
     def predict_direction(self, cot_data: Dict, historical_data: List[Dict] = None) -> Dict:
