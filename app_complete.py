@@ -149,16 +149,17 @@ class RequestCoalescer:
             return result
 
 def get_smart_cache_timeout():
-    """Cache più lunga quando COT non si aggiorna"""
+    """Cache breve per dashboard reattiva"""
     now = datetime.now()
     weekday = now.weekday()
     hour = now.hour
-    
-    if weekday == 1 and hour >= 20:  # Martedì sera
-        return 3600  # 1 ora
-    if weekday == 2 and hour < 12:  # Mercoledì mattina
-        return 7200  # 2 ore
-    return 86400  # 24 ore altri giorni
+
+    # Cache molto più breve per dashboard reattiva
+    if weekday == 1 and hour >= 20:  # Martedì sera (giorno COT)
+        return 300  # 5 minuti
+    if weekday == 2 and hour < 12:  # Mercoledì mattina (appena usciti dati COT)
+        return 600  # 10 minuti
+    return 1800  # 30 minuti altri giorni (invece di 24 ore!)
 
 def smart_cache_response(key_prefix):
     """Decorator con cache intelligente + coalescing"""
@@ -1056,11 +1057,11 @@ def get_current_economic_data():
                     'impact_gold': 'POSITIVE'
                 }
             },
-            'fed_watch': {
-                'september_cut_25bps': 87,
-                'september_cut_50bps': 13,
-                'market_pricing': 'Taglio tassi quasi certo'
-            }
+            'fed_watch': [
+                {'rate': 'Taglio 25bps', 'prob': 87},
+                {'rate': 'Taglio 50bps', 'prob': 13},
+                {'rate': 'Nessun taglio', 'prob': 0}
+            ]
         }
         
         return jsonify(economic_data)
@@ -1161,7 +1162,7 @@ def get_cot_synthesis(symbol):
 
 @app.route('/api/analysis/complete/<symbol>')
 @smart_cache_response('complete_analysis')
-@cached(category='complete', ttl=600)  # Cache 10 minuti
+@cached(category='complete', ttl=300)  # Cache 5 minuti (ridotto da 10)
 def get_complete_analysis(symbol):
     """Analisi completa: COT + Tecnica + AI + ML"""
     try:
@@ -1876,7 +1877,7 @@ def scrape_symbol(symbol):
 @app.route('/api/data/<symbol>')
 @login_required
 @smart_cache_response('cot_data')
-@cached(category='cot_data', ttl=3600)  # Cache 1 ora
+@cached(category='cot_data', ttl=600)  # Cache 10 minuti (ridotto da 1 ora)
 def get_data(symbol):
     """Dati storici simbolo"""
     days = request.args.get('days', 30, type=int)
@@ -1897,7 +1898,7 @@ def get_data(symbol):
 
 @app.route('/api/predictions/<symbol>')
 @login_required
-@cached(category='prediction', ttl=1800)  # Cache 30 minuti
+@cached(category='prediction', ttl=600)  # Cache 10 minuti (ridotto da 30)
 def get_predictions(symbol):
     """Predizioni simbolo - solo Professional o Admin"""
     # ✅ ADMIN bypassa tutto

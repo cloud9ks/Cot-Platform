@@ -47,4 +47,4 @@ Thumbs.db
 *.vsidx
 
 # Backup files
-*.bak
+*.bak.claude/settings.local.json
