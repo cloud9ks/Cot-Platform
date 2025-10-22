@@ -166,8 +166,16 @@ def smart_cache_response(key_prefix):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            cache_key = f"{key_prefix}:{f.__name__}:{':'.join(map(str, args))}"
-            
+            # CRITICO: Include BOTH args AND kwargs nel cache key
+            # Flask passa route params come kwargs (es: symbol='USD')
+            key_parts = [key_prefix, f.__name__]
+            if args:
+                key_parts.extend(map(str, args))
+            if kwargs:
+                # Sort kwargs per cache key consistente
+                key_parts.extend(f"{k}:{v}" for k, v in sorted(kwargs.items()))
+            cache_key = ':'.join(key_parts)
+
             # Check cache
             cached = cache.get(cache_key)
             if cached is not None:
