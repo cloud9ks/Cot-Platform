@@ -1186,37 +1186,12 @@ def get_complete_analysis(symbol):
         # 1. Dati COT
         latest_cot = COTData.query.filter_by(symbol=symbol)\
             .order_by(COTData.date.desc()).first()
-        
-        if latest_cot:
-            try:
-                gpt_input = {
-                    'symbol': symbol,
-                    'date': latest_cot.date.isoformat(),
-                    'non_commercial_long': latest_cot.non_commercial_long,
-                    'non_commercial_short': latest_cot.non_commercial_short,
-                    'commercial_long': latest_cot.commercial_long,
-                    'commercial_short': latest_cot.commercial_short,
-                    'net_position': latest_cot.net_position,
-                    'sentiment_score': latest_cot.sentiment_score
-                }
-                
-                # ✅ USA GPTAnalyzer invece di analyze_with_gpt()
-                if gpt_analyzer.client:
-                    gpt_raw = gpt_analyzer.analyze_single_symbol(gpt_input)
-                else:
-                    logger.warning("GPT Analyzer non disponibile - usando fallback")
-                    gpt_raw = gpt_analyzer._create_fallback_analysis(gpt_input)
-                
-                # Gestisci il risultato
-                try:
-                    if isinstance(gpt_raw, dict):
-                        complete_analysis['gpt_analysis'] = gpt_raw
-                    else:
-                        complete_analysis['gpt_analysis'] = json.loads(gpt_raw)
-                except Exception:
-                    complete_analysis['gpt_analysis'] = {'raw': gpt_raw, 'note': 'Non-JSON'}
-            except Exception as e:
-                complete_analysis['gpt_analysis'] = {'error': str(e)}
+
+        # NOTA: GPT Analysis NON viene generata qui!
+        # Viene generata SOLO da:
+        # 1. Scraping manuale (/api/scrape/<symbol>)
+        # 2. Scheduler automatico (domenica 21:00)
+        # Qui recuperiamo solo dal database se disponibile
         
         # 2. Analisi Tecnica
         if TECHNICAL_ANALYZER_AVAILABLE:
@@ -2225,9 +2200,91 @@ def create_database_indexes():
         db.session.rollback()
   
 
+# =================== SCHEDULER AUTOMATICO ===================
+def weekly_gpt_analysis():
+    """
+    Genera analisi GPT per tutti i simboli
+    Eseguito automaticamente ogni domenica alle 21:00
+    """
+    with app.app_context():
+        logger.info("🤖 SCHEDULER: Inizio analisi GPT settimanale per tutti i simboli")
+
+        for symbol in COT_SYMBOLS.keys():
+            try:
+                logger.info(f"🤖 Generazione GPT per {symbol}...")
+
+                # Ottieni ultimi dati COT
+                latest_cot = COTData.query.filter_by(symbol=symbol)\
+                    .order_by(COTData.date.desc()).first()
+
+                if not latest_cot:
+                    logger.warning(f"⚠️ Nessun dato COT per {symbol}, skip")
+                    continue
+
+                # Prepara dati per GPT
+                gpt_input = {
+                    'symbol': symbol,
+                    'date': latest_cot.date.isoformat(),
+                    'non_commercial_long': latest_cot.non_commercial_long,
+                    'non_commercial_short': latest_cot.non_commercial_short,
+                    'commercial_long': latest_cot.commercial_long,
+                    'commercial_short': latest_cot.commercial_short,
+                    'net_position': latest_cot.net_position,
+                    'sentiment_score': latest_cot.sentiment_score
+                }
+
+                # Genera analisi GPT
+                if gpt_analyzer.client:
+                    gpt_analysis = gpt_analyzer.analyze_single_symbol(gpt_input)
+                else:
+                    logger.warning(f"GPT Analyzer non disponibile per {symbol} - usando fallback")
+                    gpt_analysis = gpt_analyzer._create_fallback_analysis(gpt_input)
+
+                # Salva predizione con GPT
+                prediction = Prediction(
+                    symbol=symbol,
+                    prediction_date=datetime.now(),
+                    predicted_direction=gpt_analysis.get('direction', 'NEUTRAL'),
+                    confidence=gpt_analysis.get('confidence', 50),
+                    ml_score=None,
+                    gpt_analysis=json.dumps(gpt_analysis) if isinstance(gpt_analysis, dict) else gpt_analysis
+                )
+                db.session.add(prediction)
+                db.session.commit()
+
+                logger.info(f"✅ GPT salvata per {symbol}")
+
+                # Invalida cache per forzare refresh
+                GLOBAL_CACHE.invalidate('complete', f"get_complete_analysis:{symbol}")
+                cache.delete(f"complete_analysis:get_complete_analysis:{symbol}")
+
+            except Exception as e:
+                logger.error(f"❌ Errore GPT per {symbol}: {e}")
+                continue
+
+        logger.info("🤖 SCHEDULER: Analisi GPT settimanale completata!")
+
+# Configura scheduler
+scheduler.init_app(app)
+scheduler.start()
+
+# Aggiungi job settimanale: ogni domenica alle 21:00
+scheduler.add_job(
+    id='weekly_gpt_analysis',
+    func=weekly_gpt_analysis,
+    trigger='cron',
+    day_of_week='sun',  # Domenica
+    hour=21,            # 21:00
+    minute=0,
+    timezone='Europe/Rome'
+)
+
+logger.info("✅ Scheduler configurato: GPT analysis ogni domenica 21:00")
+
+# =================== AVVIO APP ===================
 if __name__ == '__main__':
     import os
-    
+
     # Porta da environment (per Render/Heroku)
     port = int(os.environ.get('PORT', 5000))
     
