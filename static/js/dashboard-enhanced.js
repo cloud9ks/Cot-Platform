@@ -551,7 +551,10 @@ function updateDashboard(data) {
 
   // Aggiorna GPT Analysis
   if (data.gpt_analysis) {
+    console.log('✅ GPT analysis found in updateDashboard:', data.gpt_analysis);
     renderGptAnalysis(document.getElementById('gptAnalysis'), data.gpt_analysis);
+  } else {
+    console.warn('⚠️ No gpt_analysis in updateDashboard data');
   }
 }
 
@@ -1009,11 +1012,21 @@ async function loadPredictions(symbol) {
 
     // Analisi GPT
     if (completeRes.status === 'fulfilled' && completeRes.value) {
+      console.log('📥 Complete analysis response:', completeRes.value);
+      console.log('🔍 gpt_analysis:', completeRes.value.gpt_analysis);
+      console.log('🔍 ml_prediction.gpt_analysis:', completeRes.value.ml_prediction?.gpt_analysis);
+
       const gpt = completeRes.value.gpt_analysis ||
                   completeRes.value.ml_prediction?.gpt_analysis;
 
       if (gpt) {
+        console.log('✅ Rendering GPT analysis:', gpt);
         renderGptAnalysis(gptBox, gpt);
+      } else {
+        console.warn('⚠️ No GPT analysis found in response');
+        if (gptBox) {
+          gptBox.innerHTML = '<div class="loading"><p class="mb-0">Nessuna analisi disponibile. Premi "Analisi AI" per generarne una.</p></div>';
+        }
       }
     }
 
@@ -1234,28 +1247,25 @@ async function runFullAnalysis(symbol) {
 
     const data = await res.json();
 
-    console.log('✅ Analisi AI completata, dati ricevuti:', data);
+    console.log('✅ Scraping completato, risposta:', data);
+    console.log('🔍 data.gpt_analysis:', data.gpt_analysis);
+    console.log('🔍 data.data?.gpt_analysis:', data.data?.gpt_analysis);
 
     // Pulisci TUTTA la cache per forzare refresh
     cache.clear();
     console.log('🗑️ Cache JavaScript completamente pulita');
 
-    // Aspetta 1 secondo per assicurarsi che il backend abbia salvato tutto
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Aspetta 2 secondi per assicurarsi che il backend abbia salvato tutto E invalidato la cache
+    console.log('⏳ Aspetto 2 secondi per backend cache invalidation...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Ricarica tutto FORZANDO il bypass della cache
     console.log('🔄 Ricaricamento forzato di tutti i dati...');
     await reloadAll(true); // Force refresh = true
 
-    // Aggiorna subito la box GPT se disponibile
-    if (data && data.gpt_analysis) {
-      renderGptAnalysis(document.getElementById('gptAnalysis'), data.gpt_analysis);
-    }
-
-    // Aggiorna ML prediction se disponibile
-    if (data && data.ml_prediction) {
-      setAIPrediction(data.ml_prediction);
-    }
+    // Dopo reloadAll, loadPredictions dovrebbe aver già caricato GPT
+    // Ma logghiamo per essere sicuri
+    console.log('✅ reloadAll completato, GPT dovrebbe essere visibile ora');
 
     showAlert('✅ Analisi AI completata e dati aggiornati!', 'success', 5000);
   } catch (e) {

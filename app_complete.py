@@ -1296,9 +1296,19 @@ def get_complete_analysis(symbol):
                     gpt_json = json.loads(last_pred.gpt_analysis) \
                                if isinstance(last_pred.gpt_analysis, str) else last_pred.gpt_analysis
                     complete_analysis['gpt_analysis'] = gpt_json
-                except Exception:
+                    logger.info(f"✅ Using GPT from database for {symbol}")
+                except Exception as e:
                     complete_analysis['gpt_analysis'] = last_pred.gpt_analysis
-        
+                    logger.warning(f"⚠️ GPT parse error for {symbol}: {e}")
+        else:
+            logger.info(f"✅ Using fresh GPT analysis for {symbol}")
+
+        # Log se gpt_analysis è presente nella risposta
+        if 'gpt_analysis' in complete_analysis:
+            logger.info(f"📤 Returning gpt_analysis for {symbol}: {list(complete_analysis['gpt_analysis'].keys()) if isinstance(complete_analysis['gpt_analysis'], dict) else 'string'}")
+        else:
+            logger.warning(f"⚠️ NO gpt_analysis in response for {symbol}")
+
         return jsonify(complete_analysis)
         
     except Exception as e:
@@ -1851,20 +1861,31 @@ def scrape_symbol(symbol):
                 db.session.commit()
                 logger.info(f"✅ Prediction saved for {symbol}")
             
-            # 5. ⚡ INVALIDA CACHE (CRITICO!)
+            # 5. ⚡ INVALIDA ENTRAMBE LE CACHE (CRITICO!)
+            # Invalida Flask cache (usata da smart_cache_response)
             cache_keys = [
                 f"complete_analysis:get_complete_analysis:{symbol}",
                 f"technical:get_technical_analysis:{symbol}",
                 f"cot_data:get_data:{symbol}",
                 f"synthesis:get_cot_synthesis:{symbol}"
             ]
-            
+
             for key in cache_keys:
                 try:
                     cache.delete(key)
-                    logger.info(f"🗑️ Cache invalidated: {key}")
+                    logger.info(f"🗑️ Flask cache invalidated: {key}")
                 except Exception as e:
-                    logger.warning(f"Failed to invalidate {key}: {e}")
+                    logger.warning(f"Failed to invalidate Flask cache {key}: {e}")
+
+            # Invalida GLOBAL_CACHE (usata da @cached decorator)
+            try:
+                GLOBAL_CACHE.invalidate('complete', f"get_complete_analysis:{symbol}")
+                GLOBAL_CACHE.invalidate('technical', f"get_technical_analysis:{symbol}")
+                GLOBAL_CACHE.invalidate('cot_data', f"get_data:{symbol}")
+                GLOBAL_CACHE.invalidate('synthesis', f"get_cot_synthesis:{symbol}")
+                logger.info(f"🗑️ GLOBAL_CACHE invalidated for {symbol}")
+            except Exception as e:
+                logger.warning(f"Failed to invalidate GLOBAL_CACHE: {e}")
             
             return jsonify({
                 'status': 'success',
