@@ -990,7 +990,8 @@ if __name__ == "__main__":
 predictor = create_production_predictor()
 @app.route('/api/technical/<symbol>')
 @smart_cache_response('technical')
-@cached(category='technical', ttl=300)  # Cache 5 minuti
+# NOTA: NON usare @cached qui! Crea conflitto con smart_cache_response
+# smart_cache_response è sufficiente per gestire la cache correttamente
 def get_technical_analysis(symbol):
     """Analisi tecnica completa per un simbolo"""
     try:
@@ -1103,7 +1104,8 @@ def get_economic_calendar_api():
 
 @app.route('/api/synthesis/<symbol>')
 @smart_cache_response('synthesis')
-@cached(category='synthesis', ttl=600)  # <-- AGGIUNGI QUESTA RIGA
+# NOTA: NON usare @cached qui! Crea conflitto con smart_cache_response
+# smart_cache_response è sufficiente per gestire la cache correttamente
 def get_cot_synthesis(symbol):
     """Sintesi COT + Tecnica per un simbolo"""
     try:
@@ -1169,7 +1171,9 @@ def get_cot_synthesis(symbol):
 
 @app.route('/api/analysis/complete/<symbol>')
 @smart_cache_response('complete_analysis')
-@cached(category='complete', ttl=300)  # Cache 5 minuti (ridotto da 10)
+# CRITICO: NON usare @cached qui! Causa conflitto cache:
+# - @cached si esegue PRIMA e serve dati vecchi con chiavi sbagliate
+# - smart_cache_response gestisce già la cache correttamente
 def get_complete_analysis(symbol):
     """Analisi completa: COT + Tecnica + AI + ML"""
     try:
@@ -1881,7 +1885,8 @@ def scrape_symbol(symbol):
 @app.route('/api/data/<symbol>')
 @login_required
 @smart_cache_response('cot_data')
-@cached(category='cot_data', ttl=600)  # Cache 10 minuti (ridotto da 1 ora)
+# NOTA: NON usare @cached qui! Crea conflitto con smart_cache_response
+# smart_cache_response è sufficiente per gestire la cache correttamente
 def get_data(symbol):
     """Dati storici simbolo"""
     days = request.args.get('days', 30, type=int)
