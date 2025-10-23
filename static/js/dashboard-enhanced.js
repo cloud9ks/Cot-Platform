@@ -451,15 +451,12 @@ async function reloadAll(forceRefresh = false) {
     console.log('🗑️ Cache pulita prima del reload');
   }
 
+  // OTTIMIZZATO: Carica solo dati essenziali per non sovraccaricare il server
+  // Le altre sezioni si caricano on-demand quando apri la tab
   await Promise.allSettled([
     loadOverview(currentSymbol),
-    loadCotHistory(currentSymbol, getSelectedDays()),
-    loadTechnical(currentSymbol),
-    loadEconomic(),
-    loadPredictions(currentSymbol),
-    loadSystemStatus(),
-    loadMarketOverview(),
-    loadAlerts(currentSymbol)
+    loadCotHistory(currentSymbol, getSelectedDays())
+    // Technical, Economic, Predictions vengono caricati solo quando apri la tab specifica
   ]);
 
   console.log('✅ Reload completato per simbolo:', currentSymbol);
@@ -1443,7 +1440,8 @@ async function fetchWithCache(url, bypassCache = false) {
   }
 
   const controller = new AbortController();
-  const timeoutMs = url.includes('/api/analysis/complete/') ? 30000 : 10000;
+  // Aumentato timeout a 30s per TUTTE le API (Render free tier è lento)
+  const timeoutMs = 30000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
