@@ -177,6 +177,8 @@
     .leader-rank.rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; }
     .leader-rank.rank-2 { background: linear-gradient(135deg, #9ca3af, #6b7280); color: white; }
     .leader-rank.rank-3 { background: linear-gradient(135deg, #d97706, #92400e); color: white; }
+    .leader-rank.rank-4 { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+    .leader-rank.rank-5 { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
 
     .pair-card {
       padding: 16px;
@@ -297,6 +299,11 @@
           <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Previsioni
         </button>
       </li>
+      <li class="nav-item">
+        <button class="nav-link" id="leaders-tab" data-bs-toggle="tab" data-bs-target="#leaders" type="button">
+          <i class="fa-solid fa-trophy me-1"></i> Market Leaders
+        </button>
+      </li>
     </ul>
 
     <!-- Content -->
@@ -391,56 +398,6 @@
               <h6 class="mb-3">Distribuzione Posizioni</h6>
               <div style="position:relative;height:300px;">
                 <canvas id="pieChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Market Leaders Section -->
-        <div class="card-enhanced mt-4">
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="mb-0"><i class="fa-solid fa-trophy text-warning me-2"></i>COT Market Leaders</h5>
-            <small class="text-muted">Aggiornato settimanalmente</small>
-          </div>
-
-          <div class="row g-4 mb-4">
-            <!-- Top Long -->
-            <div class="col-md-6">
-              <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(52,211,153,0.2)); border-left: 4px solid #10b981;">
-                <h6 class="text-success mb-3 fw-bold">
-                  <i class="fa-solid fa-arrow-trend-up me-2"></i>Top Long Positions
-                </h6>
-                <div id="topLongList">
-                  <div class="loading text-center py-3">
-                    <div class="spinner-border spinner-border-sm text-success"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Top Short -->
-            <div class="col-md-6">
-              <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(248,113,113,0.2)); border-left: 4px solid #ef4444;">
-                <h6 class="text-danger mb-3 fw-bold">
-                  <i class="fa-solid fa-arrow-trend-down me-2"></i>Top Short Positions
-                </h6>
-                <div id="topShortList">
-                  <div class="loading text-center py-3">
-                    <div class="spinner-border spinner-border-sm text-danger"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pair Trading Suggestions -->
-          <div class="p-4 rounded" style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.15)); border: 2px solid rgba(99,102,241,0.3);">
-            <h6 class="text-primary mb-3 fw-bold">
-              <i class="fa-solid fa-lightbulb me-2"></i>Pair Trading Opportunities
-            </h6>
-            <div id="pairTradingSuggestions">
-              <div class="loading text-center py-3">
-                <div class="spinner-border spinner-border-sm text-primary"></div>
               </div>
             </div>
           </div>
@@ -552,6 +509,57 @@
               <div class="metric-card">
                 <div class="metric-value">OK</div>
                 <div class="metric-label">Selenium</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MARKET LEADERS -->
+      <div class="tab-pane fade" id="leaders">
+        <div class="row g-4 mb-4">
+          <!-- Top Long -->
+          <div class="col-md-6">
+            <div class="card-enhanced">
+              <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(52,211,153,0.2)); border-left: 4px solid #10b981;">
+                <h6 class="text-success mb-3 fw-bold">
+                  <i class="fa-solid fa-arrow-trend-up me-2"></i>Top Long Positions
+                </h6>
+                <div id="topLongList">
+                  <div class="loading text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-success"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Short -->
+          <div class="col-md-6">
+            <div class="card-enhanced">
+              <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(248,113,113,0.2)); border-left: 4px solid #ef4444;">
+                <h6 class="text-danger mb-3 fw-bold">
+                  <i class="fa-solid fa-arrow-trend-down me-2"></i>Top Short Positions
+                </h6>
+                <div id="topShortList">
+                  <div class="loading text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-danger"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pair Trading Suggestions -->
+        <div class="card-enhanced">
+          <div class="p-4 rounded" style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.15)); border: 2px solid rgba(99,102,241,0.3);">
+            <h6 class="text-primary mb-3 fw-bold">
+              <i class="fa-solid fa-lightbulb me-2"></i>Pair Trading Opportunities
+            </h6>
+            <div id="pairTradingSuggestions">
+              <div class="loading text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
               </div>
             </div>
           </div>
