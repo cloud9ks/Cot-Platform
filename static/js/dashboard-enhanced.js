@@ -1527,22 +1527,36 @@ function escapeHtml(s) {
 // MARKET LEADERS & PAIR TRADING
 // =====================================================
 async function loadMarketLeaders() {
-  console.log('🏆 Loading Market Leaders...');
+  console.log('🏆 START: Loading Market Leaders...');
 
   try {
     // Carica tutti i simboli disponibili
+    console.log('📡 Step 1: Fetching symbols list...');
     const symbolsRes = await fetch('/api/symbols');
-    if (!symbolsRes.ok) throw new Error('Errore caricamento simboli');
+    console.log('📡 Symbols response status:', symbolsRes.status);
+
+    if (!symbolsRes.ok) {
+      throw new Error(`Errore caricamento simboli: ${symbolsRes.status}`);
+    }
 
     const symbolsData = await symbolsRes.json();
+    console.log('📦 Symbols data received:', symbolsData);
+
     const symbols = symbolsData.symbols || [];
+    console.log(`✅ Step 1 complete: ${symbols.length} simboli trovati`);
+
+    if (symbols.length === 0) {
+      throw new Error('Nessun simbolo disponibile');
+    }
 
     // Carica dati COT per tutti i simboli
+    console.log('📡 Step 2: Fetching COT data per ogni simbolo...');
     const cotPromises = symbols.map(s =>
       fetchWithCache(`/api/data/${encodeURIComponent(s.code)}?days=7`)
         .then(data => {
           if (data && data.length > 0) {
             const latest = data[0];
+            console.log(`  ✓ ${s.code}: net_position=${latest.net_position}`);
             return {
               symbol: s.code,
               name: s.name || s.code,
@@ -1553,18 +1567,23 @@ async function loadMarketLeaders() {
               date: latest.date
             };
           }
+          console.warn(`  ✗ ${s.code}: nessun dato disponibile`);
           return null;
         })
         .catch(e => {
-          console.warn(`Errore per ${s.code}:`, e);
+          console.error(`  ✗ ${s.code}: ERRORE:`, e.message);
           return null;
         })
     );
 
+    console.log('⏳ Attendendo completamento fetch...');
     const allCotData = (await Promise.all(cotPromises)).filter(d => d !== null);
+    console.log(`✅ Step 2 complete: ${allCotData.length} simboli con dati COT validi`);
 
     if (allCotData.length === 0) {
-      console.warn('Nessun dato COT disponibile');
+      const msg = 'Nessun dato COT disponibile';
+      console.error('❌', msg);
+      showMarketLeadersError(msg);
       return;
     }
 
@@ -1596,22 +1615,54 @@ async function loadMarketLeaders() {
     renderTopShort(topShort);
     renderPairTrading(topLong, topShort, allCotData);
 
-    console.log('✅ Market Leaders renderizzati');
+    console.log('✅ Market Leaders renderizzati con successo!');
 
   } catch (e) {
-    console.error('❌ Errore loadMarketLeaders:', e);
+    console.error('❌ ERRORE CRITICO in loadMarketLeaders:', e);
+    console.error('❌ Stack trace:', e.stack);
+    showMarketLeadersError(`Errore caricamento: ${e.message}`);
   }
 }
 
+function showMarketLeadersError(message) {
+  console.error('🚨 Mostrando errore Market Leaders:', message);
+
+  const containers = [
+    document.getElementById('topLongList'),
+    document.getElementById('topShortList'),
+    document.getElementById('pairTradingSuggestions')
+  ];
+
+  containers.forEach(container => {
+    if (container) {
+      container.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          ${message}
+        </div>
+      `;
+    }
+  });
+}
+
 function renderTopLong(topLong) {
+  console.log('📊 renderTopLong chiamata con', topLong?.length, 'items');
   const container = document.getElementById('topLongList');
-  if (!container) return;
+
+  if (!container) {
+    console.error('❌ Container topLongList NON TROVATO nel DOM!');
+    return;
+  }
+
+  console.log('✅ Container topLongList trovato');
 
   if (!topLong || topLong.length === 0) {
+    console.warn('⚠️ Nessun dato topLong da renderizzare');
     container.innerHTML = '<div class="text-muted text-center py-2">Nessun dato disponibile</div>';
     return;
   }
 
+  console.log('🎨 Rendering', topLong.length, 'top long items...');
   container.innerHTML = topLong.map((item, index) => `
     <div class="leader-item">
       <div class="d-flex align-items-center gap-3">
@@ -1627,17 +1678,27 @@ function renderTopLong(topLong) {
       </div>
     </div>
   `).join('');
+  console.log('✅ Top Long renderizzato con successo!');
 }
 
 function renderTopShort(topShort) {
+  console.log('📊 renderTopShort chiamata con', topShort?.length, 'items');
   const container = document.getElementById('topShortList');
-  if (!container) return;
+
+  if (!container) {
+    console.error('❌ Container topShortList NON TROVATO nel DOM!');
+    return;
+  }
+
+  console.log('✅ Container topShortList trovato');
 
   if (!topShort || topShort.length === 0) {
+    console.warn('⚠️ Nessun dato topShort da renderizzare');
     container.innerHTML = '<div class="text-muted text-center py-2">Nessun dato disponibile</div>';
     return;
   }
 
+  console.log('🎨 Rendering', topShort.length, 'top short items...');
   container.innerHTML = topShort.map((item, index) => `
     <div class="leader-item">
       <div class="d-flex align-items-center gap-3">
@@ -1653,15 +1714,24 @@ function renderTopShort(topShort) {
       </div>
     </div>
   `).join('');
+  console.log('✅ Top Short renderizzato con successo!');
 }
 
 function renderPairTrading(topLong, topShort, allData) {
-  const container = document.getElementById('pairTradingSuggestions');
-  if (!container) return;
+  console.log('🎯 renderPairTrading chiamata');
+  console.log('  topLong:', topLong?.length, 'items');
+  console.log('  topShort:', topShort?.length, 'items');
+  console.log('  allData:', allData?.length, 'items');
 
-  console.log('🎯 Generando pair trading...');
-  console.log('Top Long:', topLong);
-  console.log('Top Short:', topShort);
+  const container = document.getElementById('pairTradingSuggestions');
+
+  if (!container) {
+    console.error('❌ Container pairTradingSuggestions NON TROVATO nel DOM!');
+    return;
+  }
+
+  console.log('✅ Container pairTradingSuggestions trovato');
+  console.log('🎯 Generando pair trading suggestions...');
 
   // Genera suggerimenti pair trading
   const pairs = [];
@@ -1767,6 +1837,7 @@ function renderPairTrading(topLong, topShort, allData) {
   const topPairs = pairs.slice(0, 6);
 
   console.log('📊 Top 6 pairs selezionati:', topPairs);
+  console.log('🎨 Rendering', topPairs.length, 'pair trading cards...');
 
   container.innerHTML = topPairs.map(p => `
     <div class="pair-card">
@@ -1795,6 +1866,7 @@ function renderPairTrading(topLong, topShort, allData) {
       </div>
     </div>
   `).join('');
+  console.log('✅ Pair Trading renderizzato con successo!');
 }
 
 // Cleanup on page unload
