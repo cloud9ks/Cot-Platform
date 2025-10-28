@@ -1589,25 +1589,30 @@ async function loadMarketLeaders() {
 
     console.log('✅ Dati caricati per', allCotData.length, 'simboli');
 
-    // Ordina per net position
-    const sortedByNet = [...allCotData].sort((a, b) => b.net_position - a.net_position);
+    // Separa simboli con posizioni POSITIVE (long) e NEGATIVE (short)
+    const longPositions = allCotData.filter(d => d.net_position > 0);
+    const shortPositions = allCotData.filter(d => d.net_position < 0);
 
-    console.log('📊 Dati ordinati per net position:', sortedByNet.map(d => `${d.symbol}: ${d.net_position}`));
+    console.log(`📊 Separazione: ${longPositions.length} con net position > 0, ${shortPositions.length} con net position < 0`);
 
-    // Top 5 Long (posizioni nette più positive)
-    const topLong = sortedByNet.slice(0, 5);
-    console.log('🟢 Top 5 LONG:', topLong.map(d => `${d.symbol} (${d.net_position})`));
+    // Top 5 Long (posizioni nette PIÙ POSITIVE)
+    const topLong = [...longPositions]
+      .sort((a, b) => b.net_position - a.net_position)
+      .slice(0, 5);
+    console.log('🟢 Top 5 LONG (net position > 0):', topLong.map(d => `${d.symbol} (+${d.net_position})`));
 
-    // Top 5 Short (posizioni nette più negative)
-    const topShort = sortedByNet.slice(-5).reverse();
-    console.log('🔴 Top 5 SHORT:', topShort.map(d => `${d.symbol} (${d.net_position})`));
+    // Top 5 Short (posizioni nette PIÙ NEGATIVE)
+    const topShort = [...shortPositions]
+      .sort((a, b) => a.net_position - b.net_position)  // Ordine crescente per avere i più negativi
+      .slice(0, 5);
+    console.log('🔴 Top 5 SHORT (net position < 0):', topShort.map(d => `${d.symbol} (${d.net_position})`));
 
-    // Verifica duplicati
+    // Verifica: non dovrebbero mai esserci duplicati ora
     const longSymbols = new Set(topLong.map(d => d.symbol));
     const shortSymbols = new Set(topShort.map(d => d.symbol));
     const duplicates = [...longSymbols].filter(s => shortSymbols.has(s));
     if (duplicates.length > 0) {
-      console.error('⚠️ SIMBOLI DUPLICATI trovati in entrambe le liste:', duplicates);
+      console.error('⚠️ ERRORE LOGICO: simboli duplicati:', duplicates);
     }
 
     // Renderizza
@@ -1733,14 +1738,40 @@ function renderPairTrading(topLong, topShort, allData) {
   console.log('✅ Container pairTradingSuggestions trovato');
   console.log('🎯 Generando pair trading suggestions...');
 
+  // Helper: verifica se una coppia è tradabile
+  const commodities = ['GOLD', 'SILVER', 'OIL'];
+  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF'];
+  const majors = ['USD', 'EUR', 'GBP'];  // Solo major currencies per commodities
+
+  const isTradablePair = (base, quote) => {
+    const isCommodityBase = commodities.includes(base);
+    const isCommodityQuote = commodities.includes(quote);
+
+    // Commodities NON possono essere combinate tra loro (es: GOLD/SILVER non esiste)
+    if (isCommodityBase && isCommodityQuote) return false;
+
+    // Commodity vs valuta: SOLO contro major currencies (USD, EUR, GBP)
+    if (isCommodityBase) return majors.includes(quote);
+    if (isCommodityQuote) return majors.includes(base);
+
+    // Valuta vs valuta: sempre ok
+    return currencies.includes(base) && currencies.includes(quote);
+  };
+
   // Genera suggerimenti pair trading
   const pairs = [];
 
-  // 1. COMBINAZIONI TOP LONG vs TOP SHORT (tutte le combinazioni significative)
+  // 1. COMBINAZIONI TOP LONG vs TOP SHORT (solo coppie tradabili)
   topLong.forEach((longItem, i) => {
     topShort.forEach((shortItem, j) => {
       // Evita lo stesso simbolo
       if (longItem.symbol === shortItem.symbol) return;
+
+      // FILTRO: solo coppie tradabili (no GOLD/JPY, no SILVER/AUD, etc.)
+      if (!isTradablePair(longItem.symbol, shortItem.symbol)) {
+        console.log(`  ⊗ Skip coppia non tradabile: ${longItem.symbol}/${shortItem.symbol}`);
+        return;
+      }
 
       // Calcola divergenza
       const divergence = Math.abs(longItem.net_position) + Math.abs(shortItem.net_position);
@@ -1758,24 +1789,31 @@ function renderPairTrading(topLong, topShort, allData) {
           strength: divergence,
           reasoning: `${longItem.symbol} netto LONG (${numberFmt.format(longItem.net_position)}) vs ${shortItem.symbol} netto SHORT (${numberFmt.format(shortItem.net_position)}). Forte divergenza COT suggerisce opportunità ${direction} su ${pairName}.`
         });
+        console.log(`  ✓ Coppia valida generata: ${pairName}`);
       }
     });
   });
 
-  // 2. COPPIE VALUTARIE SPECIFICHE (tutte le valute)
-  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF'];
+  // 2. COPPIE VALUTARIE FOREX (solo valute, NO commodities)
   const currencyData = allData.filter(d => currencies.includes(d.symbol));
 
   if (currencyData.length >= 2) {
     const sortedCur = [...currencyData].sort((a, b) => b.net_position - a.net_position);
 
-    // Genera coppie per tutte le combinazioni valutarie significative
+    // Genera coppie FX (valuta vs valuta)
     for (let i = 0; i < Math.min(3, sortedCur.length); i++) {
       for (let j = sortedCur.length - 1; j > sortedCur.length - 4 && j >= 0; j--) {
         if (i >= j) continue;
 
         const long = sortedCur[i];
         const short = sortedCur[j];
+
+        // Verifica validità coppia (defensive check)
+        if (!isTradablePair(long.symbol, short.symbol)) {
+          console.log(`  ⊗ Skip coppia FX non valida: ${long.symbol}/${short.symbol}`);
+          continue;
+        }
+
         const divergence = Math.abs(long.net_position - short.net_position);
 
         if (divergence > 15000) {
@@ -1787,15 +1825,13 @@ function renderPairTrading(topLong, topShort, allData) {
             strength: divergence,
             reasoning: `Coppia FX: ${long.symbol} forte LONG (${numberFmt.format(long.net_position)}) vs ${short.symbol} debole (${numberFmt.format(short.net_position)}). Suggerisce trend rialzista ${long.symbol}${short.symbol}.`
           });
+          console.log(`  ✓ Coppia FX generata: ${long.symbol}${short.symbol}`);
         }
       }
     }
   }
 
-  // 3. COMMODITIES vs USD/EUR/GBP
-  const commodities = ['GOLD', 'SILVER', 'OIL'];
-  const majors = ['USD', 'EUR', 'GBP'];
-
+  // 3. COMMODITIES vs MAJOR CURRENCIES (GOLD/USD, SILVER/EUR, etc.)
   commodities.forEach(commSymbol => {
     const comm = allData.find(d => d.symbol === commSymbol);
     if (!comm) return;
@@ -1803,6 +1839,12 @@ function renderPairTrading(topLong, topShort, allData) {
     majors.forEach(majSymbol => {
       const maj = allData.find(d => d.symbol === majSymbol);
       if (!maj) return;
+
+      // Verifica validità coppia (defensive check)
+      if (!isTradablePair(commSymbol, majSymbol)) {
+        console.log(`  ⊗ Skip coppia commodity non valida: ${commSymbol}/${majSymbol}`);
+        return;
+      }
 
       // Se c'è divergenza tra commodity e major currency
       const commLong = comm.net_position > 0;
@@ -1820,6 +1862,7 @@ function renderPairTrading(topLong, topShort, allData) {
             strength: strength,
             reasoning: `${commSymbol} ${commLong ? 'LONG' : 'SHORT'} (${numberFmt.format(comm.net_position)}) vs ${majSymbol} ${majLong ? 'LONG' : 'SHORT'} (${numberFmt.format(maj.net_position)}). Divergenza macro suggerisce ${commLong ? 'rialzo' : 'ribasso'} ${commSymbol} contro ${majSymbol}.`
           });
+          console.log(`  ✓ Coppia commodity generata: ${commSymbol}/${majSymbol}`);
         }
       }
     });
