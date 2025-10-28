@@ -1805,18 +1805,25 @@ def scrape_symbol(symbol):
                 )
                 logger.info(f"✅ Sentiment: {data['sentiment_score']:.2f}%")
             
-            # 2. Salva COT nel DB
+            # 2. Salva COT nel DB (UPDATE se esiste, altrimenti INSERT)
             existing = COTData.query.filter_by(
                 symbol=symbol, date=data['date']
             ).first()
-            
-            if not existing:
+
+            if existing:
+                # Aggiorna record esistente con nuovi dati
+                old_net = existing.net_position
+                for key, value in data.items():
+                    if key != 'id':  # Non sovrascrivere l'ID
+                        setattr(existing, key, value)
+                logger.info(f"🔄 COT data UPDATED for {symbol} (Net Position: {old_net} → {data.get('net_position')})")
+            else:
+                # Crea nuovo record
                 cot_entry = COTData(**data)
                 db.session.add(cot_entry)
-                db.session.commit()
-                logger.info(f"✅ COT data saved for {symbol}")
-            else:
-                logger.info(f"ℹ️ COT data already exists for {symbol}")
+                logger.info(f"✅ COT data CREATED for {symbol}")
+
+            db.session.commit()
             
             # 3. ⚡ GPT Pre-calcolo (CHIAVE PER PERFORMANCE!)
             gpt_analysis = None
