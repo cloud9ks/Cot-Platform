@@ -203,10 +203,6 @@ function setupEventListeners() {
 
       // Carica dati specifici per tab
       switch(tabId) {
-        case '#charts':
-          // Carica Market Leaders quando apri tab Grafici COT
-          loadMarketLeaders();
-          break;
         case '#technical':
           loadTechnical(currentSymbol);
           break;
@@ -215,6 +211,10 @@ function setupEventListeners() {
           break;
         case '#predictions':
           loadPredictions(currentSymbol);
+          break;
+        case '#leaders':
+          // Carica Market Leaders quando apri la tab
+          loadMarketLeaders();
           break;
       }
     });
@@ -1573,11 +1573,23 @@ async function loadMarketLeaders() {
     // Ordina per net position
     const sortedByNet = [...allCotData].sort((a, b) => b.net_position - a.net_position);
 
-    // Top 3 Long (posizioni nette più positive)
-    const topLong = sortedByNet.slice(0, 3);
+    console.log('📊 Dati ordinati per net position:', sortedByNet.map(d => `${d.symbol}: ${d.net_position}`));
 
-    // Top 3 Short (posizioni nette più negative)
-    const topShort = sortedByNet.slice(-3).reverse();
+    // Top 5 Long (posizioni nette più positive)
+    const topLong = sortedByNet.slice(0, 5);
+    console.log('🟢 Top 5 LONG:', topLong.map(d => `${d.symbol} (${d.net_position})`));
+
+    // Top 5 Short (posizioni nette più negative)
+    const topShort = sortedByNet.slice(-5).reverse();
+    console.log('🔴 Top 5 SHORT:', topShort.map(d => `${d.symbol} (${d.net_position})`));
+
+    // Verifica duplicati
+    const longSymbols = new Set(topLong.map(d => d.symbol));
+    const shortSymbols = new Set(topShort.map(d => d.symbol));
+    const duplicates = [...longSymbols].filter(s => shortSymbols.has(s));
+    if (duplicates.length > 0) {
+      console.error('⚠️ SIMBOLI DUPLICATI trovati in entrambe le liste:', duplicates);
+    }
 
     // Renderizza
     renderTopLong(topLong);
@@ -1647,66 +1659,116 @@ function renderPairTrading(topLong, topShort, allData) {
   const container = document.getElementById('pairTradingSuggestions');
   if (!container) return;
 
+  console.log('🎯 Generando pair trading...');
+  console.log('Top Long:', topLong);
+  console.log('Top Short:', topShort);
+
   // Genera suggerimenti pair trading
   const pairs = [];
 
-  // Trova coppie di valute per pair trading
-  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF'];
+  // 1. COMBINAZIONI TOP LONG vs TOP SHORT (tutte le combinazioni significative)
+  topLong.forEach((longItem, i) => {
+    topShort.forEach((shortItem, j) => {
+      // Evita lo stesso simbolo
+      if (longItem.symbol === shortItem.symbol) return;
 
-  // Prendi il più long e il più short tra le valute
+      // Calcola divergenza
+      const divergence = Math.abs(longItem.net_position) + Math.abs(shortItem.net_position);
+
+      // Solo se divergenza significativa
+      if (divergence > 20000) {
+        const pairName = `${longItem.symbol}/${shortItem.symbol}`;
+        const direction = longItem.net_position > 0 ? 'LONG' : 'SHORT';
+
+        pairs.push({
+          pair: pairName,
+          base: longItem,
+          quote: shortItem,
+          direction: direction,
+          strength: divergence,
+          reasoning: `${longItem.symbol} netto LONG (${numberFmt.format(longItem.net_position)}) vs ${shortItem.symbol} netto SHORT (${numberFmt.format(shortItem.net_position)}). Forte divergenza COT suggerisce opportunità ${direction} su ${pairName}.`
+        });
+      }
+    });
+  });
+
+  // 2. COPPIE VALUTARIE SPECIFICHE (tutte le valute)
+  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF'];
   const currencyData = allData.filter(d => currencies.includes(d.symbol));
 
   if (currencyData.length >= 2) {
-    const sortedCurrencies = [...currencyData].sort((a, b) => b.net_position - a.net_position);
+    const sortedCur = [...currencyData].sort((a, b) => b.net_position - a.net_position);
 
-    const mostLong = sortedCurrencies[0];
-    const mostShort = sortedCurrencies[sortedCurrencies.length - 1];
+    // Genera coppie per tutte le combinazioni valutarie significative
+    for (let i = 0; i < Math.min(3, sortedCur.length); i++) {
+      for (let j = sortedCur.length - 1; j > sortedCur.length - 4 && j >= 0; j--) {
+        if (i >= j) continue;
 
-    // Genera suggerimento solo se ci sono posizioni significative
-    if (Math.abs(mostLong.net_position) > 10000 || Math.abs(mostShort.net_position) > 10000) {
-      const pairName = `${mostLong.symbol}${mostShort.symbol}`;
-      const direction = 'LONG'; // Long sulla coppia = long su base, short su quote
+        const long = sortedCur[i];
+        const short = sortedCur[j];
+        const divergence = Math.abs(long.net_position - short.net_position);
 
-      pairs.push({
-        pair: pairName,
-        base: mostLong,
-        quote: mostShort,
-        direction: direction,
-        strength: Math.abs(mostLong.net_position) + Math.abs(mostShort.net_position),
-        reasoning: `${mostLong.symbol} mostra forte posizionamento LONG (+${numberFmt.format(mostLong.net_position)}), mentre ${mostShort.symbol} ha forte posizionamento SHORT (${numberFmt.format(mostShort.net_position)})`
-      });
+        if (divergence > 15000) {
+          pairs.push({
+            pair: `${long.symbol}${short.symbol}`,
+            base: long,
+            quote: short,
+            direction: 'LONG',
+            strength: divergence,
+            reasoning: `Coppia FX: ${long.symbol} forte LONG (${numberFmt.format(long.net_position)}) vs ${short.symbol} debole (${numberFmt.format(short.net_position)}). Suggerisce trend rialzista ${long.symbol}${short.symbol}.`
+          });
+        }
+      }
     }
   }
 
-  // Aggiungi anche commodities vs currencies se disponibili
-  const gold = allData.find(d => d.symbol === 'GOLD');
-  const usd = allData.find(d => d.symbol === 'USD');
+  // 3. COMMODITIES vs USD/EUR/GBP
+  const commodities = ['GOLD', 'SILVER', 'OIL'];
+  const majors = ['USD', 'EUR', 'GBP'];
 
-  if (gold && usd && (Math.abs(gold.net_position) > 50000 || Math.abs(usd.net_position) > 20000)) {
-    const goldStrength = gold.net_position > 0 ? 'LONG' : 'SHORT';
-    const usdStrength = usd.net_position > 0 ? 'LONG' : 'SHORT';
+  commodities.forEach(commSymbol => {
+    const comm = allData.find(d => d.symbol === commSymbol);
+    if (!comm) return;
 
-    if (goldStrength !== usdStrength) {
-      pairs.push({
-        pair: 'GOLD/USD',
-        base: gold,
-        quote: usd,
-        direction: goldStrength === 'LONG' ? 'LONG' : 'SHORT',
-        strength: Math.abs(gold.net_position) + Math.abs(usd.net_position),
-        reasoning: `GOLD ${goldStrength} positioning vs USD ${usdStrength} positioning suggerisce divergenza`
-      });
-    }
-  }
+    majors.forEach(majSymbol => {
+      const maj = allData.find(d => d.symbol === majSymbol);
+      if (!maj) return;
+
+      // Se c'è divergenza tra commodity e major currency
+      const commLong = comm.net_position > 0;
+      const majLong = maj.net_position > 0;
+
+      if (commLong !== majLong || Math.abs(comm.net_position) > 50000) {
+        const strength = Math.abs(comm.net_position) + Math.abs(maj.net_position);
+
+        if (strength > 30000) {
+          pairs.push({
+            pair: `${commSymbol}/${majSymbol}`,
+            base: comm,
+            quote: maj,
+            direction: commLong ? 'LONG' : 'SHORT',
+            strength: strength,
+            reasoning: `${commSymbol} ${commLong ? 'LONG' : 'SHORT'} (${numberFmt.format(comm.net_position)}) vs ${majSymbol} ${majLong ? 'LONG' : 'SHORT'} (${numberFmt.format(maj.net_position)}). Divergenza macro suggerisce ${commLong ? 'rialzo' : 'ribasso'} ${commSymbol} contro ${majSymbol}.`
+          });
+        }
+      }
+    });
+  });
+
+  console.log('📊 Pairs generate:', pairs.length);
 
   if (pairs.length === 0) {
     container.innerHTML = '<div class="text-center text-muted py-3">Nessuna opportunità di pair trading significativa questa settimana</div>';
     return;
   }
 
-  // Ordina per strength
+  // Ordina per strength e prendi top 6
   pairs.sort((a, b) => b.strength - a.strength);
+  const topPairs = pairs.slice(0, 6);
 
-  container.innerHTML = pairs.map(p => `
+  console.log('📊 Top 6 pairs selezionati:', topPairs);
+
+  container.innerHTML = topPairs.map(p => `
     <div class="pair-card">
       <div class="d-flex justify-content-between align-items-start mb-2">
         <div>
