@@ -203,6 +203,10 @@ function setupEventListeners() {
 
       // Carica dati specifici per tab
       switch(tabId) {
+        case '#charts':
+          // Carica Market Leaders quando apri tab Grafici COT
+          loadMarketLeaders();
+          break;
         case '#technical':
           loadTechnical(currentSymbol);
           break;
@@ -1517,6 +1521,218 @@ function escapeHtml(s) {
   const div = document.createElement('div');
   div.textContent = s;
   return div.innerHTML;
+}
+
+// =====================================================
+// MARKET LEADERS & PAIR TRADING
+// =====================================================
+async function loadMarketLeaders() {
+  console.log('🏆 Loading Market Leaders...');
+
+  try {
+    // Carica tutti i simboli disponibili
+    const symbolsRes = await fetch('/api/symbols');
+    if (!symbolsRes.ok) throw new Error('Errore caricamento simboli');
+
+    const symbolsData = await symbolsRes.json();
+    const symbols = symbolsData.symbols || [];
+
+    // Carica dati COT per tutti i simboli
+    const cotPromises = symbols.map(s =>
+      fetchWithCache(`/api/data/${encodeURIComponent(s.code)}?days=7`)
+        .then(data => {
+          if (data && data.length > 0) {
+            const latest = data[0];
+            return {
+              symbol: s.code,
+              name: s.name || s.code,
+              net_position: latest.net_position || 0,
+              sentiment_score: latest.sentiment_score || 0,
+              non_commercial_long: latest.non_commercial_long || 0,
+              non_commercial_short: latest.non_commercial_short || 0,
+              date: latest.date
+            };
+          }
+          return null;
+        })
+        .catch(e => {
+          console.warn(`Errore per ${s.code}:`, e);
+          return null;
+        })
+    );
+
+    const allCotData = (await Promise.all(cotPromises)).filter(d => d !== null);
+
+    if (allCotData.length === 0) {
+      console.warn('Nessun dato COT disponibile');
+      return;
+    }
+
+    console.log('✅ Dati caricati per', allCotData.length, 'simboli');
+
+    // Ordina per net position
+    const sortedByNet = [...allCotData].sort((a, b) => b.net_position - a.net_position);
+
+    // Top 3 Long (posizioni nette più positive)
+    const topLong = sortedByNet.slice(0, 3);
+
+    // Top 3 Short (posizioni nette più negative)
+    const topShort = sortedByNet.slice(-3).reverse();
+
+    // Renderizza
+    renderTopLong(topLong);
+    renderTopShort(topShort);
+    renderPairTrading(topLong, topShort, allCotData);
+
+    console.log('✅ Market Leaders renderizzati');
+
+  } catch (e) {
+    console.error('❌ Errore loadMarketLeaders:', e);
+  }
+}
+
+function renderTopLong(topLong) {
+  const container = document.getElementById('topLongList');
+  if (!container) return;
+
+  if (!topLong || topLong.length === 0) {
+    container.innerHTML = '<div class="text-muted text-center py-2">Nessun dato disponibile</div>';
+    return;
+  }
+
+  container.innerHTML = topLong.map((item, index) => `
+    <div class="leader-item">
+      <div class="d-flex align-items-center gap-3">
+        <div class="leader-rank rank-${index + 1}">${index + 1}</div>
+        <div>
+          <div class="fw-bold">${item.name}</div>
+          <small class="text-muted">${item.symbol}</small>
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="fw-bold text-success">+${numberFmt.format(Math.abs(item.net_position))}</div>
+        <small class="text-muted">Net Position</small>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTopShort(topShort) {
+  const container = document.getElementById('topShortList');
+  if (!container) return;
+
+  if (!topShort || topShort.length === 0) {
+    container.innerHTML = '<div class="text-muted text-center py-2">Nessun dato disponibile</div>';
+    return;
+  }
+
+  container.innerHTML = topShort.map((item, index) => `
+    <div class="leader-item">
+      <div class="d-flex align-items-center gap-3">
+        <div class="leader-rank rank-${index + 1}">${index + 1}</div>
+        <div>
+          <div class="fw-bold">${item.name}</div>
+          <small class="text-muted">${item.symbol}</small>
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="fw-bold text-danger">${numberFmt.format(item.net_position)}</div>
+        <small class="text-muted">Net Position</small>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPairTrading(topLong, topShort, allData) {
+  const container = document.getElementById('pairTradingSuggestions');
+  if (!container) return;
+
+  // Genera suggerimenti pair trading
+  const pairs = [];
+
+  // Trova coppie di valute per pair trading
+  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF'];
+
+  // Prendi il più long e il più short tra le valute
+  const currencyData = allData.filter(d => currencies.includes(d.symbol));
+
+  if (currencyData.length >= 2) {
+    const sortedCurrencies = [...currencyData].sort((a, b) => b.net_position - a.net_position);
+
+    const mostLong = sortedCurrencies[0];
+    const mostShort = sortedCurrencies[sortedCurrencies.length - 1];
+
+    // Genera suggerimento solo se ci sono posizioni significative
+    if (Math.abs(mostLong.net_position) > 10000 || Math.abs(mostShort.net_position) > 10000) {
+      const pairName = `${mostLong.symbol}${mostShort.symbol}`;
+      const direction = 'LONG'; // Long sulla coppia = long su base, short su quote
+
+      pairs.push({
+        pair: pairName,
+        base: mostLong,
+        quote: mostShort,
+        direction: direction,
+        strength: Math.abs(mostLong.net_position) + Math.abs(mostShort.net_position),
+        reasoning: `${mostLong.symbol} mostra forte posizionamento LONG (+${numberFmt.format(mostLong.net_position)}), mentre ${mostShort.symbol} ha forte posizionamento SHORT (${numberFmt.format(mostShort.net_position)})`
+      });
+    }
+  }
+
+  // Aggiungi anche commodities vs currencies se disponibili
+  const gold = allData.find(d => d.symbol === 'GOLD');
+  const usd = allData.find(d => d.symbol === 'USD');
+
+  if (gold && usd && (Math.abs(gold.net_position) > 50000 || Math.abs(usd.net_position) > 20000)) {
+    const goldStrength = gold.net_position > 0 ? 'LONG' : 'SHORT';
+    const usdStrength = usd.net_position > 0 ? 'LONG' : 'SHORT';
+
+    if (goldStrength !== usdStrength) {
+      pairs.push({
+        pair: 'GOLD/USD',
+        base: gold,
+        quote: usd,
+        direction: goldStrength === 'LONG' ? 'LONG' : 'SHORT',
+        strength: Math.abs(gold.net_position) + Math.abs(usd.net_position),
+        reasoning: `GOLD ${goldStrength} positioning vs USD ${usdStrength} positioning suggerisce divergenza`
+      });
+    }
+  }
+
+  if (pairs.length === 0) {
+    container.innerHTML = '<div class="text-center text-muted py-3">Nessuna opportunità di pair trading significativa questa settimana</div>';
+    return;
+  }
+
+  // Ordina per strength
+  pairs.sort((a, b) => b.strength - a.strength);
+
+  container.innerHTML = pairs.map(p => `
+    <div class="pair-card">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <h6 class="mb-1 fw-bold">${p.pair}</h6>
+          <span class="pair-badge ${p.direction.toLowerCase()}">${p.direction}</span>
+        </div>
+        <div class="text-end">
+          <div class="small text-muted">Strength</div>
+          <div class="fw-bold">${numberFmt.format(Math.round(p.strength))}</div>
+        </div>
+      </div>
+      <p class="small text-muted mb-2">${p.reasoning}</p>
+      <div class="row g-2 mt-2">
+        <div class="col-6">
+          <div class="small p-2 rounded" style="background: rgba(16,185,129,0.1);">
+            <strong>${p.base.symbol}:</strong> ${numberFmt.format(p.base.net_position)}
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="small p-2 rounded" style="background: rgba(239,68,68,0.1);">
+            <strong>${p.quote.symbol}:</strong> ${numberFmt.format(p.quote.net_position)}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
 }
 
 // Cleanup on page unload

@@ -144,6 +144,65 @@
     .opacity-25 {
       opacity: 0.25;
     }
+
+    /* Stili Market Leaders */
+    .leader-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      background: white;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .leader-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .leader-rank {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .leader-rank.rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; }
+    .leader-rank.rank-2 { background: linear-gradient(135deg, #9ca3af, #6b7280); color: white; }
+    .leader-rank.rank-3 { background: linear-gradient(135deg, #d97706, #92400e); color: white; }
+
+    .pair-card {
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      background: white;
+      border-left: 4px solid #6366f1;
+      transition: all 0.3s ease;
+    }
+
+    .pair-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 8px 24px rgba(99,102,241,0.2);
+    }
+
+    .pair-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .pair-badge.long { background: #d1fae5; color: #065f46; }
+    .pair-badge.short { background: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body>
@@ -332,6 +391,56 @@
               <h6 class="mb-3">Distribuzione Posizioni</h6>
               <div style="position:relative;height:300px;">
                 <canvas id="pieChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Market Leaders Section -->
+        <div class="card-enhanced mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0"><i class="fa-solid fa-trophy text-warning me-2"></i>COT Market Leaders</h5>
+            <small class="text-muted">Aggiornato settimanalmente</small>
+          </div>
+
+          <div class="row g-4 mb-4">
+            <!-- Top Long -->
+            <div class="col-md-6">
+              <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(52,211,153,0.2)); border-left: 4px solid #10b981;">
+                <h6 class="text-success mb-3 fw-bold">
+                  <i class="fa-solid fa-arrow-trend-up me-2"></i>Top Long Positions
+                </h6>
+                <div id="topLongList">
+                  <div class="loading text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-success"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Short -->
+            <div class="col-md-6">
+              <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(248,113,113,0.2)); border-left: 4px solid #ef4444;">
+                <h6 class="text-danger mb-3 fw-bold">
+                  <i class="fa-solid fa-arrow-trend-down me-2"></i>Top Short Positions
+                </h6>
+                <div id="topShortList">
+                  <div class="loading text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-danger"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pair Trading Suggestions -->
+          <div class="p-4 rounded" style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.15)); border: 2px solid rgba(99,102,241,0.3);">
+            <h6 class="text-primary mb-3 fw-bold">
+              <i class="fa-solid fa-lightbulb me-2"></i>Pair Trading Opportunities
+            </h6>
+            <div id="pairTradingSuggestions">
+              <div class="loading text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
               </div>
             </div>
           </div>
