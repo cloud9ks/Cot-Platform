@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: cot-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: cot_platform
+      POSTGRES_USER: cotuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SuperSecurePassword123!}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cotuser -d cot_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flask Application
+  app:
+    build: .
+    container_name: cot-app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://cotuser:${DB_PASSWORD:-SuperSecurePassword123!}@db:5432/cot_platform
+
+      # Flask
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-change-this-in-production-super-secret-key-123456789}
+
+      # OpenAI
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+      # Stripe (se usi pagamenti)
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+
+      # TwelveData (per dati finanziari)
+      TWELVE_DATA_API_KEY: ${TWELVE_DATA_API_KEY}
+
+      # Other
+      PORT: 10000
+      DOCKER_ENV: "true"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    ports:
+      - "10000:10000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:10000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cot-nginx
+    restart: always
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: cot-network
